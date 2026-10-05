@@ -1,0 +1,57 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/mcpb/main/schemas/mcpb-manifest-v0.3.schema.json",
+  "manifest_version": "0.3",
+  "name": "openfun-data",
+  "display_name": "歐噴資料庫",
+  "version": "0.1.0",
+  "description": "在 Claude 聊天中用中文搜尋與查詢歐噴資料庫（data.openfun.tw）的台灣公共資料。",
+  "long_description": "安裝後只要貼上歐噴 API Token，就能在 Claude Desktop 的一般聊天中用自然語言：\n\n- 搜尋資料集與公司、機關、人物等資料主體\n- 閱讀資料集說明、欄位 schema、來源與授權\n- 查詢記錄（全文搜尋、精確篩選、日期或數字範圍、排序、分頁）\n- 做分組計數、加總、平均等統計\n\n所有工具都是唯讀。Token 存放在作業系統的憑證儲存區，只透過 HTTPS 的 Authorization header 送到 data.openfun.tw。\n\n取得 Token：https://data.openfun.tw/user",
+  "author": {
+    "name": "OpenFun 歐噴",
+    "url": "https://data.openfun.tw"
+  },
+  "homepage": "https://data.openfun.tw",
+  "documentation": "https://data.openfun.tw/api-docs.md",
+  "icon": "icon.png",
+  "server": {
+    "type": "node",
+    "entry_point": "server/index.mjs",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/server/index.mjs"],
+      "env": {
+        "OPENFUN_API_TOKEN": "${user_config.api_token}"
+      }
+    }
+  },
+  "user_config": {
+    "api_token": {
+      "type": "string",
+      "title": "歐噴 API Token",
+      "description": "到 https://data.openfun.tw/user 登入後建立一般 API Token，複製後貼在這裡。Token 會加密存放在本機的系統憑證儲存區。",
+      "sensitive": true,
+      "required": true
+    }
+  },
+  "tools": [
+    { "name": "openfun_guide", "description": "取得歐噴資料庫與本擴充套件的使用說明" },
+    { "name": "openfun_check_config", "description": "檢查 Token 設定是否有效" },
+    { "name": "openfun_search", "description": "搜尋資料集與資料主體（公司、機關、人物）" },
+    { "name": "openfun_list_datasets", "description": "依關鍵字或分類列出資料集" },
+    { "name": "openfun_get_dataset", "description": "資料集詳細資訊、欄位 schema、來源與授權" },
+    { "name": "openfun_get_skill", "description": "讀取資料集的 AI 使用指引（skill.md）" },
+    { "name": "openfun_query_records", "description": "查詢資料記錄（搜尋、篩選、範圍、排序、分頁）" },
+    { "name": "openfun_get_record", "description": "依 ID 取得單筆記錄" },
+    { "name": "openfun_aggregate", "description": "分組計數與數值統計" }
+  ],
+  "tools_generated": false,
+  "keywords": ["openfun", "歐噴", "台灣", "政府資料", "開放資料", "open data", "taiwan"],
+  "license": "MIT",
+  "compatibility": {
+    "claude_desktop": ">=0.10.0",
+    "platforms": ["darwin", "win32"],
+    "runtimes": {
+      "node": ">=18.0.0"
+    }
+  }
+}
