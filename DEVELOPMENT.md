@@ -158,6 +158,12 @@ MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `ena
 這些是可重現的設定案例，**尚未確認是 Mac 桌面版回報的原因**，也不能以 Linux 測試取代 Mac 實機驗收。
 設定意義見 [OpenAI 官方設定參考](https://learn.chatgpt.com/docs/config-file/config-reference)。
 
+另外測試一條替代載入路徑：保留外掛，將其 `server/index.mjs`、`setup.mjs` 與授權檔複製到獨立資料夾，
+以 `[mcp_servers.openfun-local]` 啟動同一支程式（`--host=codex`），並只停用外掛附帶的 MCP。
+實際對話仍能取得 11 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
+[官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，可用來區分外掛 MCP 與獨立 MCP 的載入差異；
+尚未在回報問題的 Mac 上驗證，不能宣稱已解決桌面版問題。
+
 ### 格式與 Codex 的解析規則（依 Codex 0.159.3 原始碼與實測）
 
 採官方建議的 portable 格式：根目錄 `plugin.json`（`$schema` 為 Agent Plugins 1.0.0，Codex 專屬介面設定放在

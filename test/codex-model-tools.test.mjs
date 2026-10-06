@@ -5,7 +5,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -24,13 +24,20 @@ const completed = (id) => ({
   response: { id, usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 } },
 });
 
-async function runProbe({ excluded = false, emptyAllowlist = false } = {}) {
+async function runProbe({ excluded = false, emptyAllowlist = false, standalone = false } = {}) {
   const base = mkdtempSync(join(tmpdir(), "openfun-model-tools-"));
   const userHome = join(base, "home");
   const codexHome = join(base, "codex");
   const pluginDir = join(base, "歐噴 外掛");
   for (const dir of [userHome, codexHome, pluginDir]) mkdirSync(dir);
   extractZip(readFileSync(join(root, "dist/openfun-codex-plugin.zip")), pluginDir);
+  const standaloneDir = join(base, "歐噴 本機 MCP");
+  if (standalone) {
+    mkdirSync(join(standaloneDir, "server"), { recursive: true });
+    for (const file of ["server/index.mjs", "setup.mjs", "LICENSE", "THIRD_PARTY_LICENSES.md"]) {
+      copyFileSync(join(pluginDir, file), join(standaloneDir, file));
+    }
+  }
   const requests = [];
   const model = createServer(async (req, res) => {
     if (req.method !== "POST") { res.writeHead(404).end(); return; }
@@ -61,7 +68,11 @@ async function runProbe({ excluded = false, emptyAllowlist = false } = {}) {
     const codeMode = excluded
       ? '[features.code_mode]\nenabled = true\nexcluded_tool_namespaces = ["mcp__openfun_data"]\n'
       : "[features]\ncode_mode = true\n";
-    const allowlist = emptyAllowlist
+    const allowlist = standalone
+      ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled = false\n' +
+        '[mcp_servers.openfun-local]\ncommand = "node"\n' +
+        `args = ${JSON.stringify([join(standaloneDir, "server/index.mjs"), "--host=codex"])}\ncwd = ${JSON.stringify(standaloneDir)}\n`
+      : emptyAllowlist
       ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled_tools = []\n'
       : "";
     writeFileSync(join(codexHome, "config.toml"),
@@ -98,7 +109,7 @@ async function runProbe({ excluded = false, emptyAllowlist = false } = {}) {
     assert.ok(Array.isArray(output?.output));
     const count = output.output.find((item) => item.text?.startsWith('{"openfunToolCount":'));
     assert.ok(count, "應取得 ALL_TOOLS 的實際數量，不能以 MCP startup status 代替");
-    const mcp = status.data.find((server) => server.name === "openfun-data");
+    const mcp = status.data.find((server) => server.name === (standalone ? "openfun-local" : "openfun-data"));
     assert.ok(mcp, "thread-scoped MCP inventory 應包含歐噴");
     return { mcpCount: Object.keys(mcp.tools).length, count: JSON.parse(count.text).openfunToolCount, output: output.output };
   } finally {
@@ -132,4 +143,13 @@ test("Codex 對話：plugin enabled_tools 空白名單時 MCP 與 ALL_TOOLS 都�
   const result = await runProbe({ emptyAllowlist: true });
   assert.equal(result.mcpCount, 0);
   assert.equal(result.count, 0);
+});
+
+test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，仍有 11 個工具且能呼叫", { skip }, async () => {
+  const result = await runProbe({ standalone: true });
+  assert.equal(result.mcpCount, 11);
+  assert.equal(result.count, 11, "應只有獨立 MCP 的工具，避免同時啟動兩組歐噴工具");
+  const call = result.output.find((item) => item.text?.startsWith('{"content":'));
+  assert.ok(call);
+  assert.match(JSON.parse(call.text).content[0].text, /尚未設定可用的歐噴 API Token/);
 });
