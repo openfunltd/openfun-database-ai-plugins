@@ -3,7 +3,7 @@
   "manifest_version": "0.3",
   "name": "openfun-data",
   "display_name": "歐噴資料庫",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "在 Claude 聊天中用中文搜尋與查詢歐噴資料庫（data.openfun.tw）的台灣公共資料。",
   "long_description": "安裝後只要貼上歐噴 API Token，就能在 Claude Desktop 的一般聊天中用自然語言：\n\n- 搜尋資料集與公司、機關、人物等資料主體\n- 閱讀資料集說明、欄位 schema、來源與授權\n- 查詢記錄（全文搜尋、精確篩選、日期或數字範圍、排序、分頁）\n- 做分組計數、加總、平均等統計\n\n所有工具都是唯讀。Token 存放在作業系統的憑證儲存區，只透過 HTTPS 的 Authorization header 送到 data.openfun.tw。\n\n取得 Token：https://data.openfun.tw/user",
   "author": {

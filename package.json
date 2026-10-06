@@ -1,6 +1,6 @@
 {
   "name": "openfun-database-ai-plugins",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "private": true,
   "description": "歐噴資料庫（data.openfun.tw）唯讀查詢：Claude Desktop 擴充套件（MCPB）、Claude 聊天指引 plugin、Codex plugin",
   "type": "module",

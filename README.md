@@ -10,15 +10,15 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 兩個平台的安裝方式不同：Claude Desktop 用滑鼠安裝即可；**Codex 安裝目前仍需要終端機和 Node.js 18 以上**，Token 則在 Codex 對話中貼上。
 
-## 下載安裝檔（v0.1.1 測試版）
+## 下載安裝檔（v0.1.0 測試版）
 
 | 平台 | 下載 |
 |---|---|
-| Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-claude-extension.mcpb) |
-| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-chat-plugin.zip) |
-| Codex | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-codex-plugin.zip) |
+| Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) |
+| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) |
+| Codex | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) |
 
-完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.1>
+完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>
 請直接下載上面的打包檔，不要使用 GitHub 自動產生的「Source code (zip)」當作安裝包。
 
 ## 選擇你的平台
@@ -33,7 +33,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | 完整說明 | [Claude Desktop 說明](docs/CLAUDE_DESKTOP.md) | [Codex plugin 說明](codex/README.md) |
 
 兩個平台都要到 <https://data.openfun.tw/user> 登入，建立**一般 API Token**（不是 Frontend Token）。
-安裝檔請從上方「[下載安裝檔](#下載安裝檔v011-測試版)」取得；開發者也可依下方「原始碼與打包」自行產生。
+安裝檔請從上方「[下載安裝檔](#下載安裝檔v010-測試版)」取得；開發者也可依下方「原始碼與打包」自行產生。
 
 ## Claude Desktop 安裝
 
@@ -70,8 +70,8 @@ Token 只存在本機 server 記憶體，Codex 重新啟動後需要重貼。想
 ## 開發狀態
 
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
-- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；Token 改在對話中設定，安裝仍需終端機，桌面 app 的操作尚未驗證。
-- 目前發布的是 [v0.1.1 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.1)；沒有部署額外的連線服務。
+- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；Token 在對話中設定，安裝仍需終端機，桌面 app 的操作尚未驗證。
+- 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異
 

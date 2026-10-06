@@ -3,11 +3,11 @@
 在 Codex 中用中文查詢 [歐噴資料庫](https://data.openfun.tw)（台灣公共資料 API）。
 內含 9 個唯讀查詢工具（搜尋資料集、讀取 schema 與使用指引、查詢記錄、分組統計）、2 個 Token 設定工具，以及教 Codex 正確使用的 skill。
 
-**下載（v0.1.1 測試版）：**[openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-codex-plugin.zip)（完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.1>）。
+**下載（v0.1.0 測試版）：**[openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip)（完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>）。
 請直接下載這個 ZIP，不要使用 GitHub 自動產生的「Source code (zip)」。
 
 - 查詢工具都是唯讀，只會連到 `https://data.openfun.tw`。
-- **安裝仍需要終端機**；Token 則是在 Codex 對話中貼上，不必再用終端機設定。
+- **安裝仍需要終端機**；Token 則是在 Codex 對話中貼上，不需要用終端機設定。
 - 這是**本機** MCP server：只在你電腦上執行的 Codex 中運作。它**不能**在 ChatGPT 網頁版使用，
   也不是公開 Plugins Directory 上架的 plugin。
 - 安裝步驟已用 Codex CLI 0.159.3 驗證；桌面 app 的畫面操作尚未驗證。
@@ -27,22 +27,6 @@
    codex plugin add openfun-data@openfun
    ```
 3. 重新啟動 Codex。
-
-## 從 v0.1.0 更新
-
-Codex 執行的是安裝時複製的快取，只換資料夾內容不會生效，需要重新安裝 plugin：
-
-1. 結束 Codex。
-2. 把新的 `openfun-codex-plugin.zip` 解壓到**原本那個長期保留的資料夾**，覆蓋舊檔。
-   這個資料夾已註冊為 marketplace 來源，不要換路徑（換路徑就得重新執行 `codex plugin marketplace add`）。
-3. 在終端機執行：
-   ```bash
-   codex plugin remove openfun-data@openfun
-   codex plugin add openfun-data@openfun
-   ```
-4. 重新啟動 Codex。
-
-移除 plugin 不會刪除你用進階選項存的 Token 設定檔，更新時不需要處理它。
 
 ## 設定 Token（在 Codex 對話中）
 

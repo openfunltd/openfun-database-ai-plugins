@@ -1,7 +1,7 @@
 {
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "openfun-data",
-  "version": "0.1.1",
+  "version": "0.1.0",
   "description": "以唯讀工具查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：搜尋資料集、讀取 schema 與使用指引、查詢記錄與統計。本機 stdio MCP server，需要 Node.js 18 以上。Token 由使用者在對話中貼上（建議短效 Token），只存在本機 server 記憶體，重新啟動後需重貼。",
   "author": {
     "name": "OpenFun 歐噴",
