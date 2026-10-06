@@ -162,15 +162,22 @@ node ~/openfun-codex-plugin/setup.mjs --remove
 
 | 狀況 | 處理 |
 |---|---|
-| Codex 說找不到歐噴資料庫的工具 | 確認已安裝 Node.js 18 以上，外掛已在「本機」啟用；重新啟動 Codex並開新對話。CLI 使用者可用 `codex plugin list` 查看。 |
+| Codex 說找不到歐噴資料庫的工具 | 請 Codex 檢查目前對話的實際工具目錄，包含 `functions.exec` 的工具或可用的工具搜尋；工具名稱可能加上 MCP 前綴。只有明確的 Node.js 啟動錯誤才需要排查 Node.js。 |
 | 上傳 ZIP 說缺少 manifest | 重新下載本頁的 ZIP；包內包含 `.claude-plugin/plugin.json` 封存檔相容入口，請勿使用 Source code ZIP。 |
 | 上傳 ZIP 顯示「無法新增外掛程式」 | 使用上方的 GitHub 市集安裝。此訊息沒有具體原因，請提供作業系統、桌面版版本與可取得的錯誤代碼以便追查。 |
 | ZIP 匯入後沒有 MCP | 用上方「從畫面新增本機市集」安裝，這個方式直接載入包內的本機 MCP 設定。 |
-| 已安裝、有 MCP，但對話找不到工具 | 在 `/mcp` 或「設定 → MCP servers」查看 `openfun-data` 的連線狀態、工具數量及錯誤。已連線時開新對話，說「請直接呼叫歐噴 MCP 的 openfun_check_config」。ChatGPT 外掛目錄的「未安裝」不代表本機外掛沒裝好；工具載入前不用重設 Token。 |
+| 已安裝、有 MCP，但對話找不到工具 | 設定畫面可能只列名稱、不能點擊。日誌 `ready` 不能證明目前對話拿得到工具；需檢查出問題對話的實際工具目錄。不要反覆重裝，也不用先重設 Token。 |
+| 回覆「未安裝」或 `public global listed plugin` | 這是公開外掛目錄的查詢結果，不能用來判定本機／Git 市集外掛。請 Codex 直接尋找本機歐噴 MCP 工具。 |
 | 尚未設定 Token | 在終端機執行 `node ~/openfun-codex-plugin/setup.mjs` 後重新啟動 Codex（或選擇在對話中貼短效 Token）。 |
 | Token 無效、已過期或類型不適用 | 到 https://data.openfun.tw/user 建立新的一般 API Token，重新執行 `setup.mjs` 更新後重新啟動 Codex。 |
 | 設定檔權限過寬或不是一般檔案 | 重新執行 `setup.mjs`，它會以正確權限重寫。 |
 | 權限不足、額度用完、伺服器錯誤 | 這些不代表查無資料；照 Codex 回覆中的建議處理。 |
+
+若 Codex 回覆找不到工具，可在同一個對話貼上：
+
+> 請檢查目前對話的實際工具目錄。如果有 functions.exec 和 ALL_TOOLS，找出名稱包含 openfun_check_config 的條目，再用 tools[實際名稱]({}) 呼叫。若只有工具搜尋功能，就搜尋後呼叫。不要用 plugin_management 查公開外掛目錄。若仍沒有工具，請回報實際檢查了哪個工具介面與結果；不要要求重裝或提供 Token。
+
+若檢查後仍沒有工具，代表目前對話尚無法呼叫；外掛指引無法自行補上 Codex 未提供的工具。後續應核對該對話的 MCP 工具清單，而不是把問題判定為 Token 無效。
 
 授權：MIT（見 `LICENSE`）；內嵌第三方套件授權見 `THIRD_PARTY_LICENSES.md`。
 
