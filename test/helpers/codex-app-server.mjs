@@ -1,11 +1,11 @@
-// 以子程序啟動 `codex app-server`（stdio JSON-RPC），只在呼叫端指定的隔離 CODEX_HOME／HOME 下執行。
-// 不送出任何對話 turn，因此不會呼叫模型，也不需要 API Key。
+// 以子程序啟動 `codex app-server`（或其他 stdio JSON-RPC 子指令，如 `exec-server --listen stdio`），
+// 只在呼叫端指定的隔離 CODEX_HOME／HOME 下執行。不送出任何對話 turn，因此不會呼叫模型，也不需要 API Key。
 import { spawn } from "node:child_process";
 import { readFileSync, readdirSync, readlinkSync } from "node:fs";
 
 export class CodexAppServer {
-  constructor(env) {
-    this.child = spawn("codex", ["app-server"], { env, stdio: ["pipe", "pipe", "pipe"] });
+  constructor(env, args = ["app-server"]) {
+    this.child = spawn("codex", args, { env, stdio: ["pipe", "pipe", "pipe"] });
     this.pending = new Map();
     this.nextId = 0;
     this.stderr = "";

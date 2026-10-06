@@ -1,5 +1,6 @@
 // 驗證 build/codex-plugin 並打包成 dist/openfun-codex-plugin.zip。
 // ZIP 根目錄即 plugin 根目錄，同時也是 marketplace 根目錄（.agents/plugins/marketplace.json 的 source.path 為 ./）。
+// 另含由 root 設定產生的相容入口 .codex-plugin/plugin.json 與 .mcp.json（見 codex-compat.mjs）。
 // 只封裝 allowlist；暫存目錄出現未列出的檔案時直接失敗。檔案排序、時間戳固定，保存 Unix 權限。
 import { zipSync } from "fflate";
 import { createHash } from "node:crypto";
@@ -14,6 +15,8 @@ const outFile = join(root, "dist", "openfun-codex-plugin.zip");
 
 export const CODEX_PLUGIN_FILES = [
   ".agents/plugins/marketplace.json",
+  ".codex-plugin/plugin.json",
+  ".mcp.json",
   "LICENSE",
   "README.md",
   "THIRD_PARTY_LICENSES.md",

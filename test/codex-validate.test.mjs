@@ -58,7 +58,17 @@ const INVALID = {
     },
     /資料夾名稱/,
   ],
-  "多出 .codex-plugin overlay": [({ dir }) => (mkdirSync(join(dir, ".codex-plugin")), writeFileSync(join(dir, ".codex-plugin", "plugin.json"), "{}")), /\.codex-plugin/],
+  "相容 manifest 空白": [({ dir }) => writeFileSync(join(dir, ".codex-plugin", "plugin.json"), "{}"), /\.codex-plugin/],
+  "相容 manifest 為 null": [({ edit }) => edit(".codex-plugin/plugin.json", () => null), /JSON object/],
+  "相容 MCP 為 null": [({ edit }) => edit(".mcp.json", () => null), /JSON object/],
+  "缺少相容入口": [({ dir }) => rmSync(join(dir, ".codex-plugin"), { recursive: true }), /缺少相容入口/],
+  "相容入口不是目錄": [({ dir }) => { rmSync(join(dir, ".codex-plugin"), { recursive: true }); writeFileSync(join(dir, ".codex-plugin"), "{}"); }, /必須是目錄/],
+  "相容 manifest 版本不同步": [({ edit }) => edit(".codex-plugin/plugin.json", (j) => ({ ...j, version: "9.9.9" })), /version/],
+  "相容技能路徑離開 plugin": [({ edit }) => edit(".codex-plugin/plugin.json", (j) => ({ ...j, skills: "./../skills/" })), /skills/],
+  "相容 MCP 使用 placeholder": [({ edit }) => edit(".mcp.json", (j) => ((server(j).args = ["${PLUGIN_ROOT}/server/index.mjs"]), j)), /placeholder/],
+  "相容 MCP 多出 server": [({ edit }) => edit(".mcp.json", (j) => ((j.mcpServers.other = { ...server(j) }), j)), /server 名稱/],
+  "相容 MCP server 非 object": [({ edit }) => edit(".mcp.json", (j) => ((j.mcpServers["openfun-data"] = null), j)), /JSON object/],
+  "相容 MCP args 非字串": [({ edit }) => edit(".mcp.json", (j) => ((server(j).args = [null]), j)), /字串陣列/],
 };
 
 for (const [name, [mutate, re]] of Object.entries(INVALID)) {

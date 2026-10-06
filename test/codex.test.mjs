@@ -1,6 +1,8 @@
 // Codex plugin 端對端測試（實際產物 dist/openfun-codex-plugin.zip）：
 // 解壓到含空白與中文的路徑 → 在隔離的 CODEX_HOME／HOME 中以 Codex CLI 安裝 → 由 Codex app-server
 // 從快取啟動 MCP server（Codex 自己解析 mcp.json 的 command/args/cwd 與 PLUGIN_ROOT）→ 檢查工具與 Token 狀態。
+// ZIP 另含相容入口（.codex-plugin/plugin.json、.mcp.json）；這裡確認同時存在時 Codex 仍只啟動一個 server、skill 只載入一次。
+// 相容入口本身的載入見 codex-compat.test.mjs。
 // 需要網路的工具只對本機 mock API 執行，不呼叫 data.openfun.tw，也不送出模型對話。
 import { test, before, after } from "node:test";
 import assert from "node:assert/strict";
@@ -21,6 +23,8 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const zipFile = join(root, "dist", "openfun-codex-plugin.zip");
 const ALLOWLIST = [
   ".agents/plugins/marketplace.json",
+  ".codex-plugin/plugin.json",
+  ".mcp.json",
   "LICENSE",
   "README.md",
   "THIRD_PARTY_LICENSES.md",
@@ -95,7 +99,7 @@ test("ZIP：allowlist 檔案、官方格式驗證通過、沒有 Token 或執行
     const text = readFileSync(join(pluginDir, rel)).toString("latin1");
     assert.doesNotMatch(text, /ofk_[0-9a-f]{64}/, `${rel} 不可含 Token`);
   }
-  for (const rel of ["mcp.json", "plugin.json", ".agents/plugins/marketplace.json"]) {
+  for (const rel of ["mcp.json", "plugin.json", ".agents/plugins/marketplace.json", ".codex-plugin/plugin.json", ".mcp.json"]) {
     assert.doesNotMatch(readFileSync(join(pluginDir, rel), "utf8"), /OPENFUN_API_TOKEN|OPENFUN_DEV|credentials|127\.0\.0\.1|localhost/, rel);
   }
   const mcp = JSON.parse(readFileSync(join(pluginDir, "mcp.json"), "utf8"));
@@ -104,6 +108,12 @@ test("ZIP：allowlist 檔案、官方格式驗證通過、沒有 Token 或執行
     command: "node",
     args: ["${PLUGIN_ROOT}/server/index.mjs", "--host=codex"],
     cwd: "${PLUGIN_ROOT}",
+  });
+  assert.deepEqual(JSON.parse(readFileSync(join(pluginDir, ".mcp.json"), "utf8")).mcpServers["openfun-data"], {
+    type: "stdio",
+    command: "node",
+    args: ["./server/index.mjs", "--host=codex"],
+    cwd: ".",
   });
   const pj = JSON.parse(readFileSync(join(pluginDir, "plugin.json"), "utf8"));
   assert.equal(pj.$schema, "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json");
@@ -132,7 +142,9 @@ async function withCodex(fn) {
   try {
     await app.initialize();
     const st = await app.request("mcpServerStatus/list", { detail: "toolsAndAuthOnly" });
-    const ours = st.data.find((s) => s.name === "openfun-data");
+    const all = st.data.filter((s) => s.name === "openfun-data");
+    assert.equal(all.length, 1, "相容入口不可多出第二個 openfun-data server");
+    const ours = all[0];
     assert.ok(ours, `Codex 應載入 openfun-data MCP server：${JSON.stringify(st.data.map((s) => s.name))}`);
     const thread = await app.request("thread/start", { ephemeral: true });
     return await fn({ app, status: ours, threadId: thread.thread.id });
@@ -143,7 +155,7 @@ async function withCodex(fn) {
 
 function findServerProcess(app) {
   const procs = descendantProcesses(app.child.pid).filter((p) => p.argv.some((a) => a.endsWith(`${sep}server${sep}index.mjs`)));
-  assert.equal(procs.length >= 1, true, "應找到 Codex 啟動的 server/index.mjs 程序");
+  assert.equal(procs.length, 1, `Codex 應只啟動一個 server/index.mjs 程序：${JSON.stringify(procs.map((p) => p.argv))}`);
   return procs[0];
 }
 
@@ -160,6 +172,9 @@ test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，
 
     const proc = findServerProcess(app);
     const cache = realpathSync(cacheDir);
+    const skills = (await app.request("skills/list", { forceReload: true })).data.flatMap((e) => e.skills);
+    const ourSkills = skills.filter((sk) => realpathSync(sk.path).startsWith(cache + sep));
+    assert.equal(ourSkills.length, 1, `plugin skill 只載入一次：${JSON.stringify(ourSkills.map((sk) => sk.path))}`);
     assert.equal(proc.argv[1], join(cache, "server", "index.mjs"), "args 中的 ${PLUGIN_ROOT} 由 Codex 展開為快取路徑");
     assert.equal(proc.argv[2], "--host=codex");
     assert.equal(proc.argv.length, 3);

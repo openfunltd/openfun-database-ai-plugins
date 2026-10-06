@@ -415,7 +415,7 @@ test("文件：三份說明的下載連結都指向目前版本；Codex 預設�
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip", "openfun-codex-plugin.zip"]) assert.ok(docs["README.md"].includes(`download/v${version}/${f}`));
   assert.ok(docs["codex/README.md"].includes(`download/v${version}/openfun-codex-plugin.zip`));
   // Codex 預設：安裝指令接著執行 setup.mjs 存本機；對話短效 Token 是另一章的選用方式
-  const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n\s*node [^\n]*setup\.mjs\n/;
+  const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n\s*node [^\n]*setup\.mjs"?\n/;
   for (const name of ["README.md", "codex/README.md"]) assert.match(docs[name], install, `${name} 的安裝指令包含 setup.mjs`);
   const codex = docs["codex/README.md"];
   const optional = codex.indexOf("## 選用：在對話中使用短效 Token");

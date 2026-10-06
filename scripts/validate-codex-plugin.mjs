@@ -3,14 +3,18 @@
 // 2. Codex 0.159.3 對 portable stdio server 的額外規則（codex-rs/codex-mcp/src/agent_plugin_config.rs）：
 //    command 為裸指令名或 `./` 開頭、cwd 在 plugin 內、env 不可覆寫 PLUGIN_ROOT／PLUGIN_DATA；
 // 3. extensions.com.openai 內的路徑以 `./` 開頭且存在；marketplace.json 依官方文件必填欄位；
-// 4. skill frontmatter、版本與 package.json 一致、args 指到的檔案存在。
+// 4. skill frontmatter、版本與 package.json 一致、args 指到的檔案存在；
+// 5. 相容入口 .codex-plugin/plugin.json 與 .mcp.json 必須與 codex-compat.mjs 由 root 設定產生的內容完全相同，
+//    且路徑以 ./ 開頭、留在 plugin 內、指到的檔案存在，不含 legacy 不展開的 placeholder。
 //
 // 用法：node scripts/validate-codex-plugin.mjs [plugin 目錄]
 import Ajv2020 from "ajv/dist/2020.js";
 import { createHash } from "node:crypto";
-import { existsSync, readFileSync, statSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { isDeepStrictEqual } from "node:util";
+import { COMPAT_MANIFEST, COMPAT_MCP, compatManifest, compatMcp } from "./codex-compat.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCHEMA_DIR = join(root, "schemas", "agent-plugins");
@@ -74,6 +78,70 @@ function checkSkill(dir, name, errors) {
   if (!fm.description || fm.description.length > 1024) errors.push(`skills/${name}/SKILL.md：description 需為 1–1024 字`);
 }
 
+function isFileIn(base, rel) {
+  const full = typeof rel === "string" && rel.startsWith("./") && !rel.includes("\\") ? contained(base, rel) : null;
+  return Boolean(full && existsSync(full));
+}
+
+// 相容入口：讓只認 .codex-plugin/plugin.json 的 Codex 路徑（executor capability discovery 等）找到同一組 skill 與 MCP server
+function checkCompat(base, manifest, mcp, errors) {
+  const dir = join(base, ".codex-plugin");
+  if (!existsSync(dir)) return errors.push(`缺少相容入口 ${COMPAT_MANIFEST}`);
+  if (!statSync(dir).isDirectory()) return errors.push(".codex-plugin/ 必須是目錄");
+  const extra = readdirSync(dir).filter((f) => f !== "plugin.json");
+  if (extra.length) errors.push(`.codex-plugin/ 只能放 plugin.json（多出：${extra.join(", ")}）`);
+  const legacy = readJson(join(base, COMPAT_MANIFEST), errors, COMPAT_MANIFEST);
+  const legacyMcp = readJson(join(base, COMPAT_MCP), errors, COMPAT_MCP);
+  for (const [label, value] of [[COMPAT_MANIFEST, legacy], [COMPAT_MCP, legacyMcp]]) {
+    if (!value || typeof value !== "object" || Array.isArray(value)) {
+      errors.push(`${label} 必須是 JSON object`);
+      return;
+    }
+  }
+
+  if (manifest) {
+    if (legacy.name !== manifest.name) errors.push(`${COMPAT_MANIFEST} name（${legacy.name}）需與 plugin.json 相同`);
+    if (legacy.version !== manifest.version) errors.push(`${COMPAT_MANIFEST} version（${legacy.version}）需與 plugin.json 相同`);
+    if (!isDeepStrictEqual(legacy, compatManifest(manifest))) errors.push(`${COMPAT_MANIFEST} 需與由 plugin.json 產生的內容相同（請重新 build）`);
+  }
+  if (legacy.skills !== "./skills/" || !isFileIn(base, legacy.skills)) errors.push(`${COMPAT_MANIFEST} skills 需為 ./skills/`);
+  if (legacy.mcpServers !== `./${COMPAT_MCP}`) errors.push(`${COMPAT_MANIFEST} mcpServers 需為 ./${COMPAT_MCP}`);
+  for (const key of ["composerIcon", "logo", "logoDark"]) {
+    const p = legacy.interface?.[key];
+    if (p !== undefined && !isFileIn(base, p)) errors.push(`${COMPAT_MANIFEST} interface.${key} 需為 ./ 開頭且存在的檔案：${p}`);
+  }
+  for (const key of ["apps", "hooks"]) if (key in legacy) errors.push(`${COMPAT_MANIFEST} 不應有 ${key}`);
+
+  let expected = null;
+  try {
+    expected = mcp ? compatMcp(mcp) : null;
+  } catch (err) {
+    errors.push(`mcp.json 無法轉成相容入口：${err.message}`);
+  }
+  if (expected && !isDeepStrictEqual(legacyMcp, expected)) errors.push(`${COMPAT_MCP} 需與由 mcp.json 產生的內容相同（請重新 build）`);
+  const names = Object.keys(legacyMcp.mcpServers ?? {}).sort();
+  if (mcp && JSON.stringify(names) !== JSON.stringify(Object.keys(mcp.mcpServers ?? {}).sort())) {
+    errors.push(`${COMPAT_MCP} 的 server 名稱需與 mcp.json 相同（同名才不會多啟動一個 server）`);
+  }
+  for (const [name, server] of Object.entries(legacyMcp.mcpServers ?? {})) {
+    const label = `${COMPAT_MCP} mcpServers.${name}`;
+    if (!server || typeof server !== "object" || Array.isArray(server)) {
+      errors.push(`${label} 必須是 JSON object`);
+      continue;
+    }
+    if (JSON.stringify(server).includes("${")) errors.push(`${label}：legacy 設定不展開 placeholder`);
+    if ("env" in server || "env_vars" in server) errors.push(`${label}：不可設定 env／env_vars`);
+    if (server.cwd !== "." && !isFileIn(base, server.cwd)) errors.push(`${label}.cwd 需為 . 或 plugin 內的 ./ 路徑`);
+    if (server.args !== undefined && (!Array.isArray(server.args) || server.args.some((arg) => typeof arg !== "string"))) {
+      errors.push(`${label}.args 必須是字串陣列`);
+      continue;
+    }
+    for (const arg of server.args ?? []) {
+      if (arg.startsWith("./") && (!isFileIn(base, arg) || !statSync(contained(base, arg)).isFile())) errors.push(`${label}.args 指向的檔案不存在：${arg}`);
+    }
+  }
+}
+
 /**
  * @param {string} dir plugin 根目錄
  * @returns {{ ok: boolean, errors: string[] }}
@@ -99,8 +167,6 @@ export function validateCodexPlugin(dir) {
       if (ext && key in ext) errors.push(`extensions.com.openai.${key}：本 plugin 不使用（MCP server 由 portable mcp.json 提供）`);
     }
   }
-  if (existsSync(join(base, ".codex-plugin"))) errors.push("不應同時提供 .codex-plugin/ 相容 overlay（設定已在 plugin.json 的 extensions.com.openai）");
-
   const mcp = readJson(join(base, "mcp.json"), errors, "mcp.json");
   if (mcp) {
     schemaErrors(vMcp, mcp, "mcp.json", errors);
@@ -129,6 +195,8 @@ export function validateCodexPlugin(dir) {
       if (/OPENFUN_API_TOKEN|ofk_/i.test(JSON.stringify(server))) errors.push(`${label} 不可包含 Token 或 Token 環境變數`);
     }
   }
+
+  checkCompat(base, manifest, mcp, errors);
 
   const market = readJson(join(base, ".agents", "plugins", "marketplace.json"), errors, ".agents/plugins/marketplace.json");
   if (market) {

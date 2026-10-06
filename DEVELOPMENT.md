@@ -149,7 +149,11 @@ OPENFUN_API_TOKEN=xxx npx @modelcontextprotocol/inspector node build/bundle/serv
 ### 格式與 Codex 的解析規則（依 Codex 0.159.3 原始碼與實測）
 
 採官方建議的 portable 格式：根目錄 `plugin.json`（`$schema` 為 Agent Plugins 1.0.0，Codex 專屬介面設定放在
-`extensions.com.openai.interface`）、根目錄 `mcp.json`、`skills/`。不提供 `.codex-plugin/plugin.json` 相容 overlay。
+`extensions.com.openai.interface`）、根目錄 `mcp.json`、`skills/`。
+打包時另由同一份設定產生 `.codex-plugin/plugin.json` 與 `.mcp.json` 相容入口；不另外維護重複設定。
+Codex 0.159.3 的 executor capability discovery 只搜尋 `.codex-plugin/` 等入口，因此只有 portable 入口時
+能找到技能，卻找不到 plugin 與 MCP 設定。相容入口的 args 使用 `./server/index.mjs`，cwd 使用 `.`，
+由 Codex 解析成 plugin 根目錄；不使用 legacy loader 不展開的 placeholder。
 
 Codex 解析 portable `mcp.json` stdio server 的方式（`codex-rs/codex-mcp/src/agent_plugin_config.rs`，tag `rust-v0.159.3`）：
 
@@ -163,6 +167,10 @@ Codex 解析 portable `mcp.json` stdio server 的方式（`codex-rs/codex-mcp/sr
 `codex plugin add openfun-data@openfun`，Codex 把 plugin 複製到 `CODEX_HOME/plugins/cache/openfun/openfun-data/<版本>/`；
 app-server 啟動的程序為 `node <快取>/server/index.mjs --host=codex`，cwd 與 `PLUGIN_ROOT` 都是快取路徑，
 env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.path` 為 `./`（Codex 允許 marketplace 根目錄即 plugin）。
+
+`test/codex-compat.test.mjs` 使用真正的 `codex exec-server` 驗證探索入口前後差異，並在隔離環境移除 portable 入口，
+驗證相容入口能安裝、啟動 MCP、提供 11 個工具與呼叫 `openfun_check_config`。兩種入口同時存在時只啟動一個 server、
+技能只載入一次。這些測試使用 Codex CLI 0.159.3，不代表舊版本或桌面 app 畫面已驗收。
 
 ### Token
 

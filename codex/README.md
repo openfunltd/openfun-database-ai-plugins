@@ -102,6 +102,7 @@ node ~/openfun-codex-plugin/setup.mjs --remove
 | 狀況 | 處理 |
 |---|---|
 | Codex 說找不到歐噴資料庫的工具 | 確認 `node --version` 為 18 以上；執行 `codex plugin list` 確認 `openfun-data@openfun` 已安裝且啟用；重新啟動 Codex。 |
+| 已安裝、有 MCP，但對話找不到工具 | 在 `/mcp` 或「設定 → MCP servers」查看 `openfun-data` 的連線狀態、工具數量及錯誤。已連線時開新對話，說「請直接呼叫歐噴 MCP 的 openfun_check_config」。ChatGPT 外掛目錄的「未安裝」不代表本機外掛沒裝好；工具載入前不用重設 Token。 |
 | 尚未設定 Token | 在終端機執行 `node ~/openfun-codex-plugin/setup.mjs` 後重新啟動 Codex（或選擇在對話中貼短效 Token）。 |
 | Token 無效、已過期或類型不適用 | 到 https://data.openfun.tw/user 建立新的一般 API Token，重新執行 `setup.mjs` 更新後重新啟動 Codex。 |
 | 設定檔權限過寬或不是一般檔案 | 重新執行 `setup.mjs`，它會以正確權限重寫。 |
