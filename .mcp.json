@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "openfun-data": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "./server/index.mjs",
+        "--host=codex"
+      ],
+      "cwd": "."
+    }
+  }
+}

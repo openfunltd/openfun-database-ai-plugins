@@ -1,0 +1,20 @@
+{
+  "name": "openfun",
+  "interface": {
+    "displayName": "OpenFun 歐噴"
+  },
+  "plugins": [
+    {
+      "name": "openfun-data",
+      "source": {
+        "source": "local",
+        "path": "./"
+      },
+      "policy": {
+        "installation": "AVAILABLE",
+        "authentication": "ON_INSTALL"
+      },
+      "category": "Productivity"
+    }
+  ]
+}
