@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "openfun-data",
   "version": "0.1.0",
-  "description": "以唯讀工具查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：搜尋資料集、讀取 schema 與使用指引、查詢記錄與統計。本機 stdio MCP server，需要 Node.js 18 以上。可在桌面版上傳 ZIP 或新增本機市集安裝。Token 可由使用者在獨立本機 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入（存在 Codex 本機設定，未加密），重新啟動不用重貼；也可選擇在對話中使用短效 Token（只存在記憶體，重新啟動後需重貼）。",
+  "description": "以唯讀工具查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：搜尋資料集、讀取 schema 與使用指引、查詢記錄與統計。本機 stdio MCP server，需要 Node.js 18 以上。可從桌面版新增 GitHub 市集安裝，安裝後依指引完成連線設定。Token 可由使用者在獨立本機 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入（存在 Codex 本機設定，未加密），重新啟動不用重貼；也可選擇在對話中使用短效 Token（只存在記憶體，重新啟動後需重貼）。",
   "author": {
     "name": "OpenFun 歐噴",
     "url": "https://data.openfun.tw"
@@ -15,7 +15,7 @@
       "interface": {
         "displayName": "歐噴資料庫",
         "shortDescription": "查詢台灣公共資料（歐噴資料庫，唯讀）",
-        "longDescription": "在 Codex 中用中文搜尋與查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：公司稅籍、選舉、採購、立法院議事等。查詢工具都是唯讀。需要 Node.js 18 以上。可從桌面版畫面安裝。在獨立本機 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入 Token（存在 Codex 本機設定，未加密），重新啟動 Codex 後即可使用；也可選擇在對話中貼短效 Token（會留在對話紀錄，重新啟動後需重貼）。",
+        "longDescription": "在 Codex 中用中文搜尋與查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：公司稅籍、選舉、採購、立法院議事等。查詢工具都是唯讀。需要 Node.js 18 以上。可從桌面版新增 GitHub 市集安裝，安裝後依指引完成連線設定。在獨立本機 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入 Token（存在 Codex 本機設定，未加密），儲存後開新對話即可使用；也可選擇在對話中貼短效 Token（會留在對話紀錄，重新啟動後需重貼）。",
         "developerName": "OpenFun 歐噴",
         "category": "Productivity",
         "capabilities": ["Read"],
