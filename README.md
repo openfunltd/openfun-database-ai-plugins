@@ -10,6 +10,17 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 兩個平台的安裝方式不同：Claude Desktop 用滑鼠安裝即可；**Codex 目前需要終端機和 Node.js 18 以上**。
 
+## 下載安裝檔（v0.1.0 測試版）
+
+| 平台 | 下載 |
+|---|---|
+| Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) |
+| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) |
+| Codex | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) |
+
+完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>
+請直接下載上面的打包檔，不要使用 GitHub 自動產生的「Source code (zip)」當作安裝包。
+
 ## 選擇你的平台
 
 | | Claude Desktop | Codex |
@@ -22,7 +33,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | 完整說明 | [Claude Desktop 說明](docs/CLAUDE_DESKTOP.md) | [Codex plugin 說明](codex/README.md) |
 
 兩個平台都要先到 <https://data.openfun.tw/user> 登入，建立一組**一般 API Token**（不是 Frontend Token）。
-目前沒有公開發布頁面，安裝檔請向提供者索取，或依下方「原始碼與打包」自行產生。
+安裝檔請從上方「[下載安裝檔](#下載安裝檔v010-測試版)」取得；開發者也可依下方「原始碼與打包」自行產生。
 
 ## Claude Desktop 安裝
 
@@ -62,7 +73,7 @@ Windows、更新或移除 Token、解除安裝與故障排除：[codex/README.md
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
 - Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；安裝與 Token 設定仍需終端機，桌面 app 的操作尚未驗證。
 - 待實作：在 Codex 對話中設定短效 Token。**目前版本尚未支援**；未來會提示建議使用短效 Token，並提醒 Token 會留在聊天紀錄中。
-- 尚未有公開 release，也沒有部署額外的連線服務。
+- 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異
 

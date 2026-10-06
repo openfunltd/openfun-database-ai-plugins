@@ -3,6 +3,9 @@
 在 Codex 中用中文查詢 [歐噴資料庫](https://data.openfun.tw)（台灣公共資料 API）。
 內含 9 個唯讀 MCP 工具（搜尋資料集、讀取 schema 與使用指引、查詢記錄、分組統計），以及教 Codex 正確使用的 skill。
 
+**下載（v0.1.0 測試版）：**[openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip)（完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>）。
+請直接下載這個 ZIP，不要使用 GitHub 自動產生的「Source code (zip)」。安裝與 Token 設定目前都需要在終端機完成，尚不支援在 Codex 對話中設定 Token。
+
 - 所有工具都是唯讀，只會連到 `https://data.openfun.tw`。
 - 這是**本機** MCP server：只在你電腦上執行的 Codex 中運作。它**不能**在 ChatGPT 網頁版使用，
   也不是公開 Plugins Directory 上架的 plugin。
