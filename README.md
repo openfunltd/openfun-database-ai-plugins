@@ -68,7 +68,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 ## 開發狀態
 
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
-- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；已驗證桌面版使用的市集安裝後端與 MCP 工具呼叫；ZIP 上傳有失敗回報，確切原因仍待確認。
+- Codex：安裝後端與 MCP 工具呼叫已用 Codex CLI 0.159.3 驗證。Mac 桌面版仍有已安裝但對話拿不到工具，以及 ZIP 上傳失敗的回報；原因尚未確認，尚未完成桌面版實機驗收。
 - 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異
