@@ -52,8 +52,9 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 1. 到「外掛程式」，選擇「本機」，按「新增 → 新增外掛市集」。
 2. 「來源」填入 `https://github.com/openfunltd/openfun-database-ai-plugins.git`，「Git 參照」填入 `codex-marketplace`，「稀疏路徑」留空。
-3. 在 OpenFun 市集安裝「歐噴資料庫」，開新對話說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
-4. 使用獨立本機 MCP 時，在「設定 → MCP 伺服器」編輯歐噴伺服器，於「環境變數」填入 `OPENFUN_API_TOKEN` 和你的 Token，儲存後重新啟動。對話找不到工具時，依 [Codex 說明](codex/README.md) 請它代為修復。
+3. 在 OpenFun 市集安裝「歐噴資料庫」，開本機對話並選取外掛。
+4. **先把 [Codex 說明中的「替代載入方式」](codex/README.md#替代載入方式貼給-ai讓它直接設定)整段貼給 AI，讓它直接替你設定 `openfun-local`。** 這也是已安裝卻找不到工具時的處理方式，不用自己輸入指令。
+5. 完成後重新啟動，在「設定 → MCP 伺服器」編輯 `openfun-local`，於「環境變數」填入 `OPENFUN_API_TOKEN` 和你的 Token，儲存後重新啟動，再開新對話檢查設定。
 
 MCP 畫面方式不用終端機或在聊天中貼 Token；本機設定未加密，請勿分享。若選擇在對話中設定，請使用短效 Token；Token 會留在對話與工具呼叫紀錄中，重新啟動後需重貼。
 
