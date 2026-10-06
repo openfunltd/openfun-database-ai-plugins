@@ -13,7 +13,7 @@
 | 檔案 | 安裝位置 | 用途 |
 |---|---|---|
 | `openfun-claude-extension.mcpb` | **Settings > Extensions** | **真正的查詢功能**；Token 只在這裡設定一次（**必要**） |
-| `openfun-chat-plugin.zip` | **Customize > Plugins** 上傳 | 聊天指引：教 Claude 怎麼搭配上面的擴充套件查資料、附來源（可選） |
+| `openfun-chat-plugin.zip` | **Customize > Plugins** 上傳 | 補充聊天使用指引；只裝 MCPB 也能查資料（可選） |
 
 - 只裝 `openfun-chat-plugin.zip` **不能查資料**：plugin 裡的本機 MCP 工具只在 Cowork 與 Claude Code 執行，一般聊天不會啟動，所以這份 plugin 刻意只放指引，不含查詢程式，也沒有 Token 欄位。
 - 把 `.mcpb` 上傳到 Customize > Plugins 會出現「The archive must contain a .claude-plugin/plugin.json manifest…」錯誤，因為 `.mcpb` 是擴充套件，不是 plugin。請改到 Settings > Extensions 安裝（見第 3 步）。
@@ -57,6 +57,8 @@
 Token 會由 Claude Desktop 加密存放在系統的憑證儲存區（macOS「鑰匙圈」、Windows「認證管理員」）。
 
 ## 3b.（可選）上傳聊天指引 plugin
+
+第 3 步完成就能查資料，擴充套件已提供查詢工具與使用說明。這一步只補充聊天使用指引，不影響是否能連線查詢。
 
 1. 在 Claude 打開 **Customize > Plugins**，選擇上傳 plugin，選 `openfun-chat-plugin.zip`。
 2. 這份 plugin 不會要求 Token，也不會單獨提供查詢功能；它讓 Claude 在你問台灣公共資料時，記得使用第 3 步安裝的擴充套件、附上來源並說明限制。

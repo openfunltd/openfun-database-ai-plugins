@@ -203,7 +203,7 @@ test("Codex app-server：從快取啟動 server，11 個工具，提示畫面環
     assert.equal(r.isError, true);
     const t = callText(r);
     assert.match(t, /尚未設定可用的歐噴 API Token：這次執行中還沒有設定 Token/);
-    assert.match(t, /設定 → MCP 伺服器/);
+    assert.match(t, /「外掛程式」→「MCP」標籤頁/);
     assert.match(t, /OPENFUN_API_TOKEN/);
     assert.doesNotMatch(t, /setup\.mjs/);
     assert.ok(t.includes(PROMPT), "對話短效 Token 仍是可選方式");

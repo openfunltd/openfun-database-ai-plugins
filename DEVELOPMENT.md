@@ -156,11 +156,11 @@ MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `ena
 這些是可重現的設定案例，**尚未確認是 Mac 桌面版回報的原因**，也不能以 Linux 測試取代 Mac 實機驗收。
 設定意義見 [OpenAI 官方設定參考](https://learn.chatgpt.com/docs/config-file/config-reference)。
 
-另外測試一條替代載入路徑：保留外掛，將其 `server/index.mjs` 與授權檔複製到獨立資料夾，
+目前使用者安裝流程將 `openfun-local` 列為必要的連線設定，測試也驗證此載入路徑：保留外掛，將其 `server/index.mjs` 與授權檔複製到獨立資料夾，
 以 `[mcp_servers.openfun-local]` 啟動同一支程式（`--host=codex`），並只停用外掛附帶的 MCP。
 實際對話仍能取得 11 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
 [官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，可用來區分外掛 MCP 與獨立 MCP 的載入差異；
-使用者已於 2026-10-06 在 macOS 15.7.7（24G720）、Codex 26.930.51102 回報此替代方式成功：
+使用者已於 2026-10-06 在 macOS 15.7.7（24G720）、Codex 26.930.51102 回報此本機連線方式成功：
 `openfun-local` 可呼叫，`openfun_check_config` 回報 Token 有效，並完成「開放文化基金會」的搜尋與記錄查詢，
 沒有重新設定 Token。此為該環境的使用者實測回報；外掛附帶 MCP 的載入根因、ZIP 上傳失敗及 Windows 實機驗收仍待確認。
 
@@ -238,7 +238,7 @@ MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄
 
 ZIP 根目錄含 `.claude-plugin/plugin.json`，對應桌面版曾回報「archive must contain .claude-plugin/plugin.json or top-level SKILL.md」的匯入器格式。此檔案從同一份 portable manifest 產生，移除 Codex 專用 interface，仍宣告 `skills` 與 `.mcp.json`；不建立第二套 MCP。
 
-`test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 11 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI；若匯入器只保留 skill，需使用文件中的畫面新增本機市集方式。
+`test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 11 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI。使用者文件只提供 GitHub 市集安裝步驟；ZIP 保留供打包、測試及更新連線程式使用。
 
 ### 發布 GitHub 市集
 

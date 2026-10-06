@@ -65,7 +65,7 @@ test("宿主提示：維持 Claude Desktop 原文字；Codex 使用 MCP 畫面�
     assert.ok(text.includes(prompt), `應包含固定提示：${text.slice(0, 80)}`);
     assert.match(text, /openfun_set_token/);
     // 預設由使用者本人在 MCP 畫面輸入；AI 不代跑、不讀檔、不轉送 Token、不主動在對話索取。
-    assert.match(text, /設定 → MCP 伺服器/);
+    assert.match(text, /「外掛程式」→「MCP」標籤頁/);
     assert.match(text, /OPENFUN_API_TOKEN/);
     assert.match(text, /環境變數透傳.*留空/);
     assert.match(text, /未加密/);
@@ -82,11 +82,11 @@ test("宿主提示：維持 Claude Desktop 原文字；Codex 使用 MCP 畫面�
     assert.doesNotMatch(text, /限縮|最小權限|唯讀 Token|1 ?小時|一小時/);
   }
   for (const hint of [codex.hint, host.updateHint]) {
-    assert.match(hint, /儲存後重新啟動 Codex/);
+    assert.match(hint, /按「儲存」後開新對話查詢/);
     assert.match(hint, /也可選擇在對話中使用(新的)?短效 Token/);
   }
   assert.match(host.updateHint, /請不要再套用同一個 Token/);
-  assert.match(extensionGuide(host), /重新啟動後用 openfun_check_config/);
+  assert.match(extensionGuide(host), /儲存後用 openfun_check_config/);
   assert.match(extensionGuide(host), /重新啟動後需要重貼/);
   assert.match(extensionGuide(host), /不會刪除環境變數或對話紀錄，也不會撤銷 Token/);
   assert.match(extensionGuide(host), /openfun_clear_token/);

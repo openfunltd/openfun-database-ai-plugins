@@ -417,8 +417,8 @@ test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Toke
   // 安裝以畫面為主；CLI 安裝與畫面環境變數／對話 Token 說明一致。
   const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n/;
   for (const name of ["README.md", "codex/README.md"]) {
-    assert.match(docs[name], /新增外掛程式/);
-    assert.match(docs[name], /新增外掛市集/);
+    assert.match(docs[name], /安裝外掛程式/);
+    assert.match(docs[name], /新增市集/);
     assert.doesNotMatch(docs[name], /安裝需要終端機|安裝目前仍需要/);
   }
   const codex = docs["codex/README.md"];
@@ -428,7 +428,7 @@ test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Toke
   assert.ok(codex.slice(optional).includes(PROMPT));
   assert.match(codex, /沒有加密/);
   assert.match(codex, /重新啟動後需要重新貼上/);
-  assert.match(codex, /刪除 `OPENFUN_API_TOKEN` 項目並重新啟動/);
+  assert.match(codex, /刪除 `OPENFUN_API_TOKEN` 項目並儲存/);
   assert.doesNotMatch(codex + docs["README.md"], /setup\.mjs/);
   assert.match(codex, /不會刪除環境變數或聊天紀錄，也不會撤銷 Token/);
   assert.doesNotMatch(codex + docs["README.md"], /進階/);

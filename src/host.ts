@@ -40,8 +40,8 @@ export const CLAUDE_DESKTOP_HOST: HostProfile = {
 export const CODEX_CHAT_TOKEN_PROMPT =
   "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
 const CODEX_MCP_TOKEN_HINT =
-  "在 Codex「設定 → MCP 伺服器」編輯獨立本機歐噴伺服器（例如 openfun-local），" +
-  "在「環境變數」新增金鑰 OPENFUN_API_TOKEN，值貼上 Token；「環境變數透傳」留空，儲存後重新啟動 Codex。";
+  "在 Codex「外掛程式」→「MCP」標籤頁編輯歐噴連線（openfun-local），" +
+  "在「環境變數」新增金鑰 OPENFUN_API_TOKEN，值貼上 Token；「環境變數透傳」留空，按「儲存」後開新對話查詢。";
 
 function codexAssistantRule(): string {
   return (
@@ -70,7 +70,7 @@ export function codexHost(): HostProfile {
     guideTokenNote: `這個 Codex plugin 的查詢工具都是唯讀。獨立本機 MCP 建議由使用者本人在設定畫面的 OPENFUN_API_TOKEN 環境變數輸入 Token。
 Token 存在 Codex 本機設定，未加密；存一次即可，直到 Token 過期、撤銷或被移除才需要更新。
 需要 Token 時（工具回報尚未設定或 Token 失效），請使用者到 ${TOKEN_PAGE_URL} 建立一般 API Token（不是 Frontend Token），
-${CODEX_MCP_TOKEN_HINT}重新啟動後用 openfun_check_config 向歐噴確認是否有效。
+${CODEX_MCP_TOKEN_HINT}儲存後用 openfun_check_config 向歐噴確認是否有效。
 ${rule}
 對話設定的 Token 在同一個 Codex 執行中的其他對話也可能共用。
 openfun_clear_token 只清除本程序記憶體中的 Token，不會刪除環境變數或對話紀錄，也不會撤銷 Token；重新啟動 Codex 後可能再次載入環境變數。
