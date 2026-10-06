@@ -49,13 +49,13 @@ description: 當使用者想查台灣公共資料或政府開放資料時使用�
    確認目前市集參照確為該名稱，其他設定一律保留。操作可由你透過現有本機檔案／執行工具完成，不要求使用者自己輸入安裝指令。
 4. 核對變更後設定可解析、程式路徑存在，回報連線設定完成。引導使用者到「外掛程式」→「MCP」標籤頁編輯 `openfun-local`，
    在環境變數輸入 `OPENFUN_API_TOKEN` 並儲存；這些畫面步驟不要求重新啟動 Codex。
-   請使用者開新對話查詢「開放文化基金會」出現在哪些資料集；新對話先探索工具並呼叫 `openfun_check_config`。
+   請使用者開新對話，送出「請檢查歐噴資料庫的設定是否正常」；新對話先探索工具並呼叫 `openfun_check_config`。
    不自行關閉程式，也不在目前缺少工具的對話假裝驗證成功。
    已在 MCP 環境變數設定的 Token 保留；檢查有效後繼續原本查詢。工具回報未設定時，引導使用者在畫面輸入。
 5. 外掛更新不會自動更新這份副本。使用者要求更新時，從 `openfunltd/openfun-database-ai-plugins` 的
    GitHub v0.1.0 Release 重新下載 `openfun-codex-plugin.zip` 及 `SHA256SUMS.txt`，核對 ZIP 的 SHA-256 後解壓到暫存目錄。
    確認 manifest 名稱、版本及 server 存在，再備份並替換副本的上述三個檔案；不要使用可能仍是舊版的市集快取。
-   保留 MCP 環境變數設定，不開啟或搬移任何憑證；完成後請使用者開新對話查詢並驗證工具。
+   保留 MCP 環境變數設定，不開啟或搬移任何憑證；完成後請使用者開新對話，送出「請檢查歐噴資料庫的設定是否正常」驗證工具。
 
 對使用者稱為「歐噴資料庫連線設定」，只在找操作畫面時提「MCP」標籤頁；不解釋 server、namespace 或 Token 來源的內部細節。
 
@@ -64,7 +64,7 @@ Token 由使用者本人在「外掛程式」→「MCP」標籤頁的連線設�
 1. 只有在工具回報「尚未設定」或「Token 無效／過期」時才處理 Token；目前已有可用的 Token 時不要再索取。
 2. 預設請使用者：到 https://data.openfun.tw/user 建立（或重新建立）一般 API Token，在「外掛程式」→「MCP」標籤頁
    編輯 `openfun-local`，在「環境變數」新增金鑰 `OPENFUN_API_TOKEN`，值貼 Token。
-   「環境變數透傳」留空，按「儲存」後開新對話查詢；不要求重啟 Codex。再呼叫 `openfun_check_config` 確認 Token 是否有效。這個值存入 Codex 本機設定，未加密；
+   「環境變數透傳」留空，按「儲存」後開新對話，送出「請檢查歐噴資料庫的設定是否正常」；不要求重啟 Codex。再呼叫 `openfun_check_config` 確認 Token 是否有效。這個值存入 Codex 本機設定，未加密；
    請勿分享含有 Token 的設定檔或截圖。不讀取獨立的 credentials.json Token 檔。
    沒有可編輯的 MCP 入口時，依上方連線設定流程建立 `openfun-local`，或選擇對話方式。
    可以簡短補一句「也可以選擇在對話中使用短效 Token」，不要主動請使用者把 Token 貼到對話。
