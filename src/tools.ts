@@ -45,7 +45,7 @@ ${host.guideTokenNote}
 | 依 ID 取單筆記錄 | openfun_get_record |
 | 分組計數、加總、平均等統計 | openfun_aggregate |
 | 確認 Token 設定是否有效 | openfun_check_config |
-${host.kind === "codex" ? "| 使用者在對話中貼出 Token 後設定（驗證成功才取代） | openfun_set_token |\n| 清除本次執行中的 Token | openfun_clear_token |\n" : ""}
+${host.kind === "codex" ? "| 使用者選擇在對話中設定 Token（選用；驗證成功才取代） | openfun_set_token |\n| 清除本次執行中的 Token | openfun_clear_token |\n" : ""}
 建議流程：openfun_search → openfun_get_dataset / openfun_get_skill → openfun_query_records 或 openfun_aggregate。
 slug 一律從搜尋結果取得，不要猜。
 
@@ -249,7 +249,7 @@ function registerTokenTools(server: McpServer, session: TokenSession): void {
     {
       title: "設定歐噴 Token（本次執行）",
       description:
-        "使用者自願在對話中貼出歐噴 API Token 後呼叫，把 Token 原樣放在 token 參數。會先檢查格式，再以固定的 GET https://data.openfun.tw/api/v1/me 驗證；驗證成功才取代目前的 Token，失敗時保留原本狀態。Token 只存在本機 MCP server 程序的記憶體（重新啟動後需要重貼），不寫檔、不顯示 Token。不要用 shell、curl、命令列或寫檔處理 Token，回覆中也不要重複 Token 的任何部分。",
+        "選用的對話設定方式：只在使用者明確選擇在對話中設定、或主動貼出歐噴 API Token 後呼叫，把 Token 原樣放在 token 參數；不要為了呼叫本工具主動索取 Token（預設請使用者自己在終端機執行 setup.mjs）。會先檢查格式，再以固定的 GET https://data.openfun.tw/api/v1/me 驗證；驗證成功才取代目前的 Token，失敗時保留原本狀態。Token 只存在本機 MCP server 程序的記憶體（重新啟動後需要重貼），不寫檔、不顯示 Token。不要用 shell、curl、命令列或寫檔處理 Token，回覆中也不要重複 Token 的任何部分。",
       inputSchema: {
         token: z.string().max(4096).describe("使用者在對話中貼出的歐噴 API Token（只放 Token 本身）"),
       },
@@ -290,7 +290,7 @@ function registerTokenTools(server: McpServer, session: TokenSession): void {
         previous.client.hasToken
           ? `已清除本程序記憶體中的 Token（原來源：${TOKEN_SOURCE_LABEL[previous.source]}）。`
           : "本程序目前沒有有效的 Token；狀態已設為清除。",
-        "之後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數；要繼續查詢請重新貼上 Token。",
+        "之後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數；要繼續查詢，可以在對話中重新設定，或重新啟動 Codex。",
         "這不會刪除對話紀錄中的 Token，也不會撤銷 Token；要讓 Token 失效請到 https://data.openfun.tw/user 撤銷。",
         "既有的本機設定檔（setup.mjs）或環境變數不會被刪除，重新啟動 Codex 後可能再次載入；要移除設定檔請自己在終端機執行 setup.mjs --remove。",
       ];

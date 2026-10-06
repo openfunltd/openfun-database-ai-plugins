@@ -168,7 +168,7 @@ export async function runSetup(argv: string[], io: SetupIO): Promise<number> {
     writeCredentials(path, checked.token, platform);
     stdout.write(
       `已儲存 Token 到 ${path}\n${permissionNote(platform)}\n` +
-        "請重新啟動 Codex 讓設定生效，之後可以請 Codex「檢查歐噴資料庫設定」確認 Token 是否有效。\n",
+        "本程式只檢查 Token 格式、沒有連線驗證。請重新啟動 Codex 讓設定生效，再請 Codex「檢查歐噴資料庫設定」向歐噴確認 Token 是否有效。\n",
     );
     return 0;
   } catch (err) {

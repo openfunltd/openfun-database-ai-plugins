@@ -58,10 +58,10 @@ src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
 src/schema.ts          meta.schema 解析
 src/config.ts          環境變數與開發覆寫
-src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 改為在對話貼短效 Token）
+src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 預設以 setup.mjs 存本機，對話短效 Token 為選用）
 src/runtime.ts         啟動參數（--host=codex）與 Token 來源解析
-src/credentials.ts     Codex 進階選用的 Token 設定檔讀寫（0700／0600）
-src/codex-setup*.ts    Codex 進階選用的 setup.mjs（互動輸入 Token、--status、--remove）
+src/credentials.ts     Codex 的 Token 設定檔讀寫（0700／0600）
+src/codex-setup*.ts    Codex 的 setup.mjs（互動輸入 Token、--status、--remove）
 codex/                 Codex plugin 靜態檔案
 scripts/validate-codex-plugin.mjs  Codex plugin 驗證
 scripts/pack-codex.mjs Codex plugin 打包（allowlist）
@@ -166,26 +166,30 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 
 ### Token
 
-主要流程是對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
+預設流程是本機設定檔：Codex 安裝本來就需要終端機，所以 README 的安裝指令在 `codex plugin add` 後接著執行
+`node <解壓資料夾>/setup.mjs`，使用者存一次，之後每次啟動 server 都會讀取。缺少或失效時，host 提示請使用者本人在終端機執行
+`node "<PLUGIN_ROOT>/setup.mjs"` 後重新啟動，不預設在對話索取 Token；AI 不能代跑這個 TTY 程式，也不讀取或轉送 Token 檔。
 
-- `openfun_set_token`：使用者在對話中貼出 Token 後由 Codex 呼叫。先用 `checkToken` 檢查格式，再以候選 Token 呼叫固定的
+- 位置：POSIX `$HOME/.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
+  只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
+- `setup.mjs` 只從 TTY 以 raw mode 讀取、不回顯；拒絕管線輸入與命令列參數；只檢查格式、不連網；以 0600 暫存檔原子替換。
+  Token 是否有效由重新啟動後的 `openfun_check_config`（`GET /api/v1/me`）確認。
+- server 讀取時拒絕權限過寬（POSIX `mode & 077`）、非本人擁有、符號連結、格式錯誤或不合法的 Token。
+  設定檔在啟動時讀取，所以更新後需重新啟動 Codex。
+- `OPENFUN_API_TOKEN` 有值時優先（但 Codex 預設不傳遞它）。Windows 不設定 ACL，檔案沿用使用者設定目錄的權限；不是加密儲存。
+
+選用的對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
+
+- `openfun_set_token`：使用者明確選擇對話方式或主動貼出 Token 時由 Codex 呼叫。先用 `checkToken` 檢查格式，再以候選 Token 呼叫固定的
   `GET /api/v1/me`（同一個 client：固定 base URL、不跟隨 redirect）；成功才取代，失敗保留原狀態（含 schema 快取）。
   輸出遮蔽新舊 Token；不寫檔、不寫 log。無法從 opaque Token 判斷期限，所以不宣稱「已驗證為短效」。
 - `openfun_clear_token`：把本程序狀態設為 `cleared`；之後不改用設定檔或環境變數，也不刪除設定檔，重新啟動後依啟動規則再次載入。
+  刪除設定檔只能由使用者執行 `setup.mjs --remove`。
 - 兩者都不是 readOnly；查詢工具仍為 readOnly。設定與清除依呼叫順序序列化執行。
 - `src/session.ts`：每次工具呼叫開始時取一份快照，header、schema 快取與輸出遮蔽都用同一個 Token；
   Token 取代時建立新快照（新的快取），進行中的舊呼叫仍以自己的舊 Token 遮蔽。
 - 對話 Token 只在 MCP server 程序記憶體。宿主可能讓多個對話共用同一個 MCP server，所以文件不宣稱「只限這段聊天」。
-  Token 會留在 Codex 的對話與工具呼叫紀錄中，這是已告知使用者的風險。
-
-啟動時的進階來源（選用）：
-
-- 位置：POSIX `$HOME/.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
-  只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
-- `setup.mjs` 只從 TTY 以 raw mode 讀取、不回顯；拒絕管線輸入與命令列參數；不連網；以 0600 暫存檔原子替換。
-- server 讀取時拒絕權限過寬（POSIX `mode & 077`）、非本人擁有、符號連結、格式錯誤或不合法的 Token。
-  設定檔在啟動時讀取，所以更新後需重新啟動 Codex。
-- `OPENFUN_API_TOKEN` 有值時優先（但 Codex 預設不傳遞它）。Windows 不設定 ACL，檔案沿用使用者設定目錄的權限；不是加密儲存。
+  Token 會留在 Codex 的對話與工具呼叫紀錄中，這是選擇此方式時已告知使用者的風險。
 
 ### 測試方式與限制
 

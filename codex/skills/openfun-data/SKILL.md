@@ -16,17 +16,22 @@ description: 當使用者想查台灣公共資料或政府開放資料時使用�
 確認 plugin 已安裝並啟用後重新啟動 Codex。
 
 ## Token
-1. 只有在工具回報「尚未設定」或「Token 無效／過期」時才請使用者提供 Token，照這段話說：
+預設方式是使用者本人在終端機執行 plugin 內的 `setup.mjs`，把 Token 存到本機設定檔，Codex 重新啟動後自動讀取。
+1. 只有在工具回報「尚未設定」或「Token 無效／過期」時才處理 Token；目前已有可用的 Token 時不要再索取。
+2. 預設請使用者：到 https://data.openfun.tw/user 建立（或重新建立）一般 API Token，在自己的終端機執行
+   工具錯誤建議中的 `node "<setup.mjs 路徑>"`（路徑照抄工具給的，不要猜），依提示貼上，然後重新啟動 Codex，
+   再呼叫 `openfun_check_config` 確認。setup.mjs 只檢查格式、不連網，是否有效要看 `openfun_check_config`。
+   可以簡短補一句「也可以選擇在對話中使用短效 Token」，不要主動請使用者把 Token 貼到對話。
+3. 你不能代為執行 setup.mjs（它只接受終端機輸入）。不要讀取、顯示或搜尋 Token 設定檔，不要用 shell、curl、
+   命令列參數、環境變數或寫檔處理或轉送 Token，回覆中也不要重複 Token 的全部或任何一部分。
+4. 對話方式（選用）：使用者明確選擇在對話中設定時，照這段話說：
    「請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。」
-   （建立與撤銷：https://data.openfun.tw/user）。目前已有可用的 Token 時不要再索取。
-2. 使用者剛貼出、還沒設定過的 Token，原樣傳給 `openfun_set_token`。曾被拒絕、已過期或已清除的 Token，
-   不要從聊天紀錄自行再次套用，請使用者提供新的短效 Token（除非使用者明確要求重新使用）。
-   不要用 shell、curl、命令列、環境變數或寫檔處理 Token，不要讀取、顯示或搜尋 Token 設定檔，回覆中也不要重複 Token 的全部或任何一部分。
-3. 設定成功後繼續原本的查詢。告訴使用者：Token 只存在本機 MCP server 記憶體，Codex 重新啟動後需要重貼。
-   無法從 Token 判斷有效期限，不要說已確認是短效 Token。設定失敗時照錯誤說明處理，原本的 Token 狀態不變。
-4. 使用者要求清除時呼叫 `openfun_clear_token`，並說明：這不會刪除對話紀錄，也不會撤銷 Token（要撤銷請到歐噴）；
-   若曾用 setup.mjs 存過設定檔，重新啟動 Codex 後可能再次載入。
-- 不要自己執行 setup.mjs；那是使用者可選的進階設定方式。
+   使用者貼出、還沒設定過的 Token（包含主動貼出的），原樣傳給 `openfun_set_token`，成功後繼續原本的查詢，並告訴使用者：
+   這個 Token 只存在本機 MCP server 記憶體，Codex 重新啟動後需要重貼。無法從 Token 判斷有效期限，不要說已確認是短效 Token。
+   設定失敗時照錯誤說明處理，原本的 Token 狀態不變。曾被拒絕、已過期或已清除的 Token，不要從聊天紀錄自行再次套用
+   （除非使用者明確要求重新使用）。
+5. 使用者要求清除時呼叫 `openfun_clear_token`，並說明：這只清除本次執行記憶體中的 Token，不會刪除本機設定檔或對話紀錄，
+   也不會撤銷 Token（要撤銷請到歐噴）；重新啟動 Codex 後可能再次載入設定檔。要刪除設定檔，請使用者自己執行 `setup.mjs --remove`。
 
 ## 查詢流程
 1. 本次對話第一次使用時呼叫 `openfun_guide`。

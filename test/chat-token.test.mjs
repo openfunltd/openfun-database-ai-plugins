@@ -87,7 +87,7 @@ test("工具清單：Claude Desktop 只有 9 個唯讀工具；Codex 為 11 個�
   }
 });
 
-test("缺 Token → 提示在對話貼短效 Token → set_token 以 /api/v1/me 驗證 → 查詢使用新 Token", async () => {
+test("缺 Token → 提示（含對話選項）→ 使用者在對話貼 Token → set_token 以 /api/v1/me 驗證 → 查詢使用新 Token", async () => {
   const { call, close } = await connect();
   try {
     const before = api.requests.length;
@@ -136,7 +136,7 @@ test("上游拒絕、格式錯誤、redirect、伺服器錯誤：保留先前的
       assert.equal(r.isError, true);
       assert.match(textOf(r), /新 Token 未套用，目前狀態維持不變/);
       assert.match(textOf(r), re);
-      assert.ok(textOf(r).includes(PROMPT), "Token 被拒時請使用者重新建立並貼上");
+      assert.ok(textOf(r).includes(PROMPT), "對話方式設定失敗時，提示仍包含對話選項的固定說法");
       assert.doesNotMatch(textOf(r), /不代表「查無資料」/);
       assertNo(r, bad, ALT_TOKEN);
     }
@@ -399,7 +399,7 @@ test("打包後的 Codex server：stdout／stderr 不含 Token，不寫任何檔
   }
 });
 
-test("文件：三份說明的下載連結都指向目前版本；Codex 文件說明對話 Token 的風險，不要求限縮權限", async () => {
+test("文件：三份說明的下載連結都指向目前版本；Codex 預設在安裝時以 setup.mjs 存本機，對話 Token 為選用，不要求限縮權限", async () => {
   const { readFileSync } = await import("node:fs");
   const root = fileURLToPath(new URL("..", import.meta.url));
   const read = (rel) => readFileSync(join(root, rel), "utf8");
@@ -414,12 +414,18 @@ test("文件：三份說明的下載連結都指向目前版本；Codex 文件�
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip"]) assert.ok(docs["docs/CLAUDE_DESKTOP.md"].includes(`download/v${version}/${f}`));
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip", "openfun-codex-plugin.zip"]) assert.ok(docs["README.md"].includes(`download/v${version}/${f}`));
   assert.ok(docs["codex/README.md"].includes(`download/v${version}/openfun-codex-plugin.zip`));
+  // Codex 預設：安裝指令接著執行 setup.mjs 存本機；對話短效 Token 是另一章的選用方式
+  const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n\s*node [^\n]*setup\.mjs\n/;
+  for (const name of ["README.md", "codex/README.md"]) assert.match(docs[name], install, `${name} 的安裝指令包含 setup.mjs`);
   const codex = docs["codex/README.md"];
-  assert.ok(codex.includes(PROMPT));
+  const optional = codex.indexOf("## 選用：在對話中使用短效 Token");
+  assert.ok(optional > 0);
+  assert.ok(!codex.slice(0, optional).includes(PROMPT), "主要流程不請使用者把 Token 貼到對話");
+  assert.ok(codex.slice(optional).includes(PROMPT));
+  assert.match(codex, /沒有加密/);
   assert.match(codex, /重新啟動後需要重新貼上/);
-  assert.match(codex, /不會刪除聊天紀錄，也不會撤銷 Token/);
-  assert.match(codex, /安裝仍需要終端機/);
-  assert.match(codex, /## 進階（選用）/);
-  assert.doesNotMatch(codex.slice(0, codex.indexOf("## 進階")), /setup\.mjs/, "主要流程不需要 setup.mjs");
+  assert.match(codex, /setup\.mjs --remove`：刪除本機設定檔/);
+  assert.match(codex, /不會刪除設定檔或聊天紀錄，也不會撤銷 Token/);
+  assert.doesNotMatch(codex + docs["README.md"], /進階/);
   assert.doesNotMatch(docs["README.md"], /都.{0,6}不要把 Token 貼到聊天|尚未支援/);
 });

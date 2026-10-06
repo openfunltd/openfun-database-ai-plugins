@@ -149,7 +149,7 @@ function findServerProcess(app) {
 
 const callText = (r) => r.content.map((c) => c.text).join("\n");
 
-test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，11 個工具，未設定時提示在對話貼短效 Token；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
+test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，11 個工具，未設定時提示在終端機執行 setup.mjs（對話 Token 可選）；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
   await withCodex(async ({ app, status, threadId }) => {
     assert.equal(status.pluginId, "openfun-data@openfun");
     assert.equal(status.serverInfo.name, "openfun-data");
@@ -175,9 +175,10 @@ test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，
     assert.equal(r.isError, true);
     const t = callText(r);
     assert.match(t, /尚未設定可用的歐噴 API Token：這次執行中還沒有設定 Token/);
-    assert.ok(t.includes(PROMPT), `提示應為在對話貼短效 Token：${t}`);
+    assert.ok(t.includes(`node "${join(cache, "setup.mjs")}"`), `預設請使用者在終端機執行快取中的 setup.mjs：${t}`);
+    assert.ok(t.includes(PROMPT), "對話短效 Token 仍是可選方式");
     assert.match(t, /openfun_set_token/);
-    assert.doesNotMatch(t, /Claude Desktop|setup\.mjs/);
+    assert.doesNotMatch(t, /Claude Desktop/);
 
     // 以下都不連網：格式錯誤在送出前就拒絕；清除只改本程序記憶體（Codex 啟動的 server 指向正式站，所以不測合法 Token）
     const bad = "ofk_bad value with spaces 1234567890";
@@ -237,7 +238,7 @@ async function runCapturedSpec(spec, fn) {
   }
 }
 
-test("Token 設定檔（進階選用）與對話 Token：Codex 解析出的啟動方式；設定、清除不回退、重啟規則；Token 不出現在輸出", { skip: linuxOnly }, async () => {
+test("Token 設定檔與對話 Token：Codex 解析出的啟動方式；設定、清除不回退、重啟規則；Token 不出現在輸出", { skip: linuxOnly }, async () => {
   api = await startMockApi();
   const path = credentialsPath({ HOME: userHome }, "linux");
   writeCredentials(path, FAKE1, "linux");
