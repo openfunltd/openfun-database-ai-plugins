@@ -12,11 +12,20 @@ description: 當使用者想查台灣公共資料或政府開放資料時使用�
 `openfun_search`、`openfun_list_datasets`、`openfun_get_dataset`、`openfun_get_skill`、`openfun_query_records`、
 `openfun_get_record`、`openfun_aggregate`；Token 管理工具為 `openfun_set_token`、`openfun_clear_token`。
 
-先尋找本機 MCP 的上述工具（若有工具探索功能，先探索再呼叫）。檢查設定時直接呼叫 `openfun_check_config`。
-不要用 ChatGPT 外掛目錄的 `not_installed` 判定本機外掛未安裝；兩者的安裝狀態不同。
-仍找不到工具時，不要假裝已連線，也不要改用網路搜尋、DNS 或 curl 當作 MCP 驗證。請使用者在 `/mcp` 或
-「設定 → MCP servers」查看 `openfun-data` 的狀態、工具數量及錯誤文字；已連線時重新啟動 Codex 並開新對話。
-啟動失敗時確認 Node.js 18 以上；工具尚未載入前，不要求重設或提供 Token。
+依目前對話提供的工具介面尋找並呼叫本機 MCP；不要只比對表面上的函式名稱：
+1. 若提供 `functions.exec` 和 `ALL_TOOLS`，先在 `ALL_TOOLS` 找名稱包含 `openfun_check_config` 的條目，
+   再在同一工具介面用 `await tools[條目的實際名稱]({})` 呼叫，輸出工具回傳結果。不要猜 MCP 前綴。
+2. 否則，若提供工具搜尋功能，用它搜尋 `openfun_check_config`，取得實際工具後呼叫。
+   已直接提供上述工具時直接呼叫，不必額外探索。
+3. 這是本機／Git 市集外掛。不要用 `plugin_management` 的搜尋、安裝狀態或 `get_plugin_dependencies`
+   驗證 `openfun-data@openfun`；`not_installed` 或 `public global listed plugin` 錯誤是公開目錄的結果，
+   不能證明本機外掛未安裝或 MCP 未啟動。
+
+完成可用的工具探索仍找不到時，只回報「目前對話的工具介面未提供歐噴工具」，不要假裝呼叫成功，
+也不要改用網路搜尋、DNS 或 curl 當作 MCP 驗證。設定畫面的「來自外掛程式」可能只列名稱、無法點擊；
+不要要求使用者從那一列查看工具數或錯誤。日誌 `ready` 只證明該次 MCP 啟動就緒，不能當作本次對話已能呼叫工具的證據。
+不要重複要求已重啟／重裝的使用者再試一次；需核對出問題對話的實際工具目錄或該對話的 MCP 工具清單。
+只有啟動錯誤明確指向 Node.js 時才排查 Node.js 18 以上；工具尚未取得前，不要求重設或提供 Token。
 
 ## Token
 預設方式是使用者本人在終端機執行 plugin 內的 `setup.mjs`，把 Token 存到本機設定檔，Codex 重新啟動後自動讀取。
