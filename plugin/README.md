@@ -10,4 +10,6 @@
 
 安裝本 plugin：在 Claude 的 Customize > Plugins 上傳 `openfun-chat-plugin.zip`。
 
+完成後開新聊天，問：「請檢查歐噴資料庫的設定是否正常」。
+
 授權：MIT（見 LICENSE）。

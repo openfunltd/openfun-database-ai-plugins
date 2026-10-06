@@ -82,7 +82,7 @@ test("宿主提示：維持 Claude Desktop 原文字；Codex 使用 MCP 畫面�
     assert.doesNotMatch(text, /限縮|最小權限|唯讀 Token|1 ?小時|一小時/);
   }
   for (const hint of [codex.hint, host.updateHint]) {
-    assert.match(hint, /按「儲存」後開新對話查詢/);
+    assert.match(hint, /按「儲存」後開新對話說「請檢查歐噴資料庫的設定是否正常」/);
     assert.match(hint, /也可選擇在對話中使用(新的)?短效 Token/);
   }
   assert.match(host.updateHint, /請不要再套用同一個 Token/);

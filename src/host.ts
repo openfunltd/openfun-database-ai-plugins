@@ -41,7 +41,7 @@ export const CODEX_CHAT_TOKEN_PROMPT =
   "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
 const CODEX_MCP_TOKEN_HINT =
   "在 Codex「外掛程式」→「MCP」標籤頁編輯歐噴連線（openfun-local），" +
-  "在「環境變數」新增金鑰 OPENFUN_API_TOKEN，值貼上 Token；「環境變數透傳」留空，按「儲存」後開新對話查詢。";
+  "在「環境變數」新增金鑰 OPENFUN_API_TOKEN，值貼上 Token；「環境變數透傳」留空，按「儲存」後開新對話說「請檢查歐噴資料庫的設定是否正常」。";
 
 function codexAssistantRule(): string {
   return (
