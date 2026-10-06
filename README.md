@@ -54,7 +54,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 ### Unix（macOS／Linux）
 
-解壓到 `$HOME/openfun-codex-plugin`，在終端機執行：
+解壓到家目錄下的 `openfun-codex-plugin` 資料夾，在終端機執行：
 
 ```bash
 codex plugin marketplace add "$HOME/openfun-codex-plugin"
@@ -64,7 +64,7 @@ node "$HOME/openfun-codex-plugin/setup.mjs"
 
 ### Windows（PowerShell）
 
-解壓到 `$HOME\openfun-codex-plugin`，在 PowerShell 執行：
+解壓到家目錄下的 `openfun-codex-plugin` 資料夾，在 PowerShell 執行：
 
 ```powershell
 codex plugin marketplace add "$HOME\openfun-codex-plugin"

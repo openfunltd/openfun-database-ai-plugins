@@ -25,7 +25,7 @@ ZIP 要解壓到**會長期保留**的資料夾，解壓後 `setup.mjs` 應直�
 
 ### Unix（macOS／Linux）
 
-1. 把 ZIP 解壓到 `$HOME/openfun-codex-plugin`（例如 macOS 為 `/Users/你的帳號/openfun-codex-plugin`，Linux 為 `/home/你的帳號/openfun-codex-plugin`）。
+1. 把 ZIP 解壓到家目錄下的 `openfun-codex-plugin` 資料夾（例如 macOS 為 `/Users/你的帳號/openfun-codex-plugin`，Linux 為 `/home/你的帳號/openfun-codex-plugin`）。
 2. 在終端機執行：
    ```bash
    codex plugin marketplace add "$HOME/openfun-codex-plugin"
@@ -35,7 +35,7 @@ ZIP 要解壓到**會長期保留**的資料夾，解壓後 `setup.mjs` 應直�
 
 ### Windows（PowerShell）
 
-1. 把 ZIP 解壓到 `$HOME\openfun-codex-plugin`（例如 `C:\Users\你的帳號\openfun-codex-plugin`）。
+1. 把 ZIP 解壓到家目錄下的 `openfun-codex-plugin` 資料夾（例如 `C:\Users\你的帳號\openfun-codex-plugin`）。
 2. 在 PowerShell 執行：
    ```powershell
    codex plugin marketplace add "$HOME\openfun-codex-plugin"
