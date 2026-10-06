@@ -4,7 +4,7 @@
 // 只封裝 allowlist；暫存目錄出現未列出的檔案時直接失敗。檔案排序、時間戳固定，保存 Unix 權限。
 import { zipSync } from "fflate";
 import { createHash } from "node:crypto";
-import { mkdirSync, readdirSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateCodexPlugin } from "./validate-codex-plugin.mjs";
@@ -54,7 +54,9 @@ const mtime = new Date("2026-01-01T00:00:00Z");
 const entries = {};
 for (const rel of expected) {
   const abs = join(stage, rel);
-  const mode = statSync(abs).mode & 0o777;
+  // Unix ZIP attrs 必須同時含 S_IFREG 與權限；只有 0644／0664 無法辨識成一般檔案。
+  // 安裝包沒有秘密或需直接執行的檔案，固定為 0100644，避免受打包機 umask 影響。
+  const mode = 0o100644;
   entries[rel] = [new Uint8Array(readFileSync(abs)), { level: 9, mtime, os: 3, attrs: mode << 16 }];
 }
 mkdirSync(dirname(outFile), { recursive: true });

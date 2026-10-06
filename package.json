@@ -19,6 +19,7 @@
     "pack:mcpb": "npm run build && node scripts/pack.mjs",
     "pack:plugin": "node scripts/pack-plugin.mjs",
     "pack:codex": "npm run build && node scripts/pack-codex.mjs",
+    "publish:codex-marketplace": "npm run pack:codex && node scripts/publish-codex-marketplace.mjs",
     "test": "npm run pack && node --test \"test/*.test.mjs\"",
     "test:unit": "node --test test/query.test.mjs test/config.test.mjs test/client.test.mjs test/tools.test.mjs test/manifest.test.mjs",
     "test:stdio": "node --test test/stdio.test.mjs",

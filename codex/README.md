@@ -10,7 +10,7 @@
 - **桌面版可從畫面安裝**。Token 可在對話中設定；想讓重新啟動後不用重貼，也可用終端機存到本機。
 - 這是**本機** MCP server：只在你電腦上執行的 Codex 中運作。它**不能**在 ChatGPT 網頁版使用，
   也不是公開 Plugins Directory 上架的 plugin。
-- 已驗證 Codex 0.159.3 的市集安裝後端、MCP 載入及工具呼叫；桌面版 ZIP 上傳畫面仍待實機驗收。
+- 已驗證 Codex 0.159.3 的市集安裝後端、MCP 載入及工具呼叫；已收到桌面版 ZIP 上傳失敗回報，建議使用下方的 GitHub 市集安裝；上傳錯誤的確切原因仍待確認。
 
 ## 需要
 
@@ -18,7 +18,25 @@
 - Node.js 18 以上。沒有的話請先到 https://nodejs.org 安裝，安裝後重新啟動 Codex。
 - 歐噴帳號：到 https://data.openfun.tw/user 登入，之後在這裡建立 Token（一般 API Token，不是 Frontend Token）。
 
-## 桌面版安裝
+## 桌面版安裝（建議：GitHub 市集）
+
+1. 在「外掛程式」頁面選擇「本機」，按「新增 → 新增外掛市集」。
+2. 填入下列內容，按「新增市集」：
+
+   | 欄位 | 填入 |
+   |---|---|
+   | 來源 | `https://github.com/openfunltd/openfun-database-ai-plugins.git` |
+   | Git 參照 | `codex-marketplace` |
+   | 稀疏路徑 | 留空 |
+
+3. 在 OpenFun 市集安裝「歐噴資料庫」，開新對話說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
+4. 尚未設定 Token 時，可說：「我要在對話中設定歐噴 Token」，再依提示貼上**短效 Token**。Token 會留在對話及工具呼叫紀錄中，請勿分享，用完可到歐噴撤銷。
+
+市集分支已包含完整的 MCP 程式，不需要自行編譯或輸入安裝指令。
+
+### 選用：上傳 ZIP
+
+部分桌面版曾回報「無法新增外掛程式」，原因尚未確認；遇到這個訊息請先使用上方的 GitHub 市集。
 
 1. 下載上方的 `openfun-codex-plugin.zip`。
 2. 在 Codex 的「外掛程式」頁面選擇「本機」，按「新增 → 新增外掛程式」。
@@ -35,7 +53,7 @@
 3. 「來源」填入上述資料夾的完整路徑；「Git 參照」與「稀疏路徑」留空。
 4. 新增市集後，安裝其中的「歐噴資料庫」，開新對話檢查設定。
 
-目前儲存庫的 `main` 分支放的是原始碼，不要直接把 GitHub 儲存庫網址當作可安裝的市集來源。
+儲存庫的 `main` 分支放的是共用原始碼；從 GitHub 新增市集時，請在「Git 參照」填入 `codex-marketplace`。
 
 ## 選用：終端機安裝並儲存 Token
 
@@ -146,6 +164,7 @@ node ~/openfun-codex-plugin/setup.mjs --remove
 |---|---|
 | Codex 說找不到歐噴資料庫的工具 | 確認已安裝 Node.js 18 以上，外掛已在「本機」啟用；重新啟動 Codex並開新對話。CLI 使用者可用 `codex plugin list` 查看。 |
 | 上傳 ZIP 說缺少 manifest | 重新下載本頁的 ZIP；包內包含 `.claude-plugin/plugin.json` 封存檔相容入口，請勿使用 Source code ZIP。 |
+| 上傳 ZIP 顯示「無法新增外掛程式」 | 使用上方的 GitHub 市集安裝。此訊息沒有具體原因，請提供作業系統、桌面版版本與可取得的錯誤代碼以便追查。 |
 | ZIP 匯入後沒有 MCP | 用上方「從畫面新增本機市集」安裝，這個方式直接載入包內的本機 MCP 設定。 |
 | 已安裝、有 MCP，但對話找不到工具 | 在 `/mcp` 或「設定 → MCP servers」查看 `openfun-data` 的連線狀態、工具數量及錯誤。已連線時開新對話，說「請直接呼叫歐噴 MCP 的 openfun_check_config」。ChatGPT 外掛目錄的「未安裝」不代表本機外掛沒裝好；工具載入前不用重設 Token。 |
 | 尚未設定 Token | 在終端機執行 `node ~/openfun-codex-plugin/setup.mjs` 後重新啟動 Codex（或選擇在對話中貼短效 Token）。 |

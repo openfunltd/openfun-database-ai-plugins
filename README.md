@@ -26,7 +26,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | | Claude Desktop | Codex |
 |---|---|---|
 | 安裝檔 | `openfun-claude-extension.mcpb`（必要）＋ `openfun-chat-plugin.zip`（可選指引） | `openfun-codex-plugin.zip`（本機 plugin） |
-| 安裝方式 | 雙擊或在設定畫面安裝 | 上傳 ZIP 或新增本機市集 |
+| 安裝方式 | 雙擊或在設定畫面安裝 | 新增 GitHub 市集（也提供 ZIP） |
 | 需要 Node.js | 不需要 | 需要 18 以上 |
 | Token 設定 | 擴充套件設定畫面的欄位 | 對話中貼短效 Token，或用終端機存到本機 |
 | Token 存放 | 系統憑證儲存區（加密） | 對話 Token 只存在記憶體；也可存本機設定檔（未加密） |
@@ -50,14 +50,14 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 適用本機 Codex 桌面版，需要 **Node.js 18 以上**。不用管理伺服器。
 
-1. 下載 `openfun-codex-plugin.zip`。
-2. 到「外掛程式」，選擇「本機」，按「新增 → 新增外掛程式」，上傳 ZIP 並啟用。
-3. 開新對話，說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
+1. 到「外掛程式」，選擇「本機」，按「新增 → 新增外掛市集」。
+2. 「來源」填入 `https://github.com/openfunltd/openfun-database-ai-plugins.git`，「Git 參照」填入 `codex-marketplace`，「稀疏路徑」留空。
+3. 在 OpenFun 市集安裝「歐噴資料庫」，開新對話說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
 4. 尚未設定 Token 時，說：「我要在對話中設定歐噴 Token」，依提示貼上短效 Token。
 
 **Token 會留在對話及工具呼叫紀錄中，建議使用短效 Token；重新啟動後需重貼。** 想讓重新啟動後不用重貼，也可用終端機存到本機設定檔。
 
-ZIP 匯入後沒有 MCP 時，可解壓 ZIP，再從「新增外掛市集」填入解壓資料夾的完整路徑並安裝，這個方式也不需要安裝指令。詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)（ZIP 內也附同一份）。
+也提供 ZIP，可從「新增外掛程式」上傳，或解壓後新增本機市集。部分桌面版有 ZIP 上傳失敗回報，建議優先使用 GitHub 市集。詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)。
 
 ## Token 注意事項
 
@@ -68,7 +68,7 @@ ZIP 匯入後沒有 MCP 時，可解壓 ZIP，再從「新增外掛市集」填�
 ## 開發狀態
 
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
-- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；已驗證桌面版使用的市集安裝後端與 MCP 工具呼叫；ZIP 上傳畫面尚未完成實機驗收。
+- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；已驗證桌面版使用的市集安裝後端與 MCP 工具呼叫；ZIP 上傳有失敗回報，確切原因仍待確認。
 - 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異

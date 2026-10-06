@@ -227,3 +227,9 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 ZIP 根目錄含 `.claude-plugin/plugin.json`，對應桌面版曾回報「archive must contain .claude-plugin/plugin.json or top-level SKILL.md」的匯入器格式。此檔案從同一份 portable manifest 產生，移除 Codex 專用 interface，仍宣告 `skills` 與 `.mcp.json`；不建立第二套 MCP。
 
 `test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 11 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI；若匯入器只保留 skill，需使用文件中的畫面新增本機市集方式。
+
+### 發布 GitHub 市集
+
+`npm run publish:codex-marketplace` 先由共用原始碼打包，再把 ZIP 的完整內容發布到 `codex-marketplace` 分支；`main` 保留原始碼，不把安裝包編譯產物混入。腳本要求原始碼已提交，驗證 plugin 後才推送，發布 commit 記錄來源 SHA。此指令供維護者使用，使用者只需在桌面版新增 GitHub 市集並指定此分支。
+
+Codex ZIP entry 固定標記為 Unix 一般檔案 `0100644`，不只存權限位元。`test/codex.test.mjs` 使用 Python 標準 ZIP reader 獨立檢查檔案類型與完整性；尚不能據此判定已解決桌面版的一般上傳錯誤。

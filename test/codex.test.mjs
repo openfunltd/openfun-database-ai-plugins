@@ -121,6 +121,20 @@ test("ZIP：allowlist 檔案、官方格式驗證通過、沒有 Token 或執行
   assert.equal(pj.version, JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version);
 });
 
+test("ZIP：標準 ZIP reader 可辨識每個 entry 為 Unix 一般檔案", () => {
+  const r = spawnSync("python3", ["-c", `
+import sys,zipfile,stat
+with zipfile.ZipFile(sys.argv[1]) as z:
+    assert z.testzip() is None
+    for item in z.infolist():
+        mode = item.external_attr >> 16
+        assert item.create_system == 3, item.filename
+        assert stat.S_ISREG(mode), (item.filename, oct(mode))
+        assert stat.S_IMODE(mode) == 0o644, (item.filename, oct(mode))
+`, zipFile], { encoding: "utf8" });
+  assert.equal(r.status, 0, r.stderr);
+});
+
 test("Codex CLI：從中文／空白路徑 marketplace add 與 plugin add 到隔離 CODEX_HOME", { skip }, () => {
   const m = codex(["plugin", "marketplace", "add", pluginDir, "--json"]);
   assert.equal(m.marketplaceName, "openfun");
