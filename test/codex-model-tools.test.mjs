@@ -11,6 +11,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexAppServer } from "./helpers/codex-app-server.mjs";
 import { extractZip } from "./helpers/unzip.mjs";
+import { GOOD_TOKEN, INVALID_TOKEN, startMockApi } from "./helpers/mock-api.mjs";
+import { credentialsPath, writeCredentials } from "../build/lib/credentials.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const hasCodex = spawnSync("codex", ["--version"], { encoding: "utf8" }).status === 0;
@@ -24,12 +26,17 @@ const completed = (id) => ({
   response: { id, usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 } },
 });
 
-async function runProbe({ excluded = false, emptyAllowlist = false, standalone = false } = {}) {
+async function runProbe({ excluded = false, emptyAllowlist = false, standalone = false, guiToken = false } = {}) {
   const base = mkdtempSync(join(tmpdir(), "openfun-model-tools-"));
   const userHome = join(base, "home");
   const codexHome = join(base, "codex");
   const pluginDir = join(base, "歐噴 外掛");
   for (const dir of [userHome, codexHome, pluginDir]) mkdirSync(dir);
+  const testEnv = { PATH: process.env.PATH, HOME: userHome, CODEX_HOME: codexHome };
+  if (process.platform === "win32") Object.assign(testEnv, {
+    USERPROFILE: userHome, APPDATA: join(userHome, "AppData", "Roaming"),
+    LOCALAPPDATA: join(userHome, "AppData", "Local"), SystemRoot: process.env.SystemRoot,
+  });
   extractZip(readFileSync(join(root, "dist/openfun-codex-plugin.zip")), pluginDir);
   const standaloneDir = join(base, "歐噴 本機 MCP");
   if (standalone) {
@@ -62,8 +69,13 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
       res.end();
     } catch { res.writeHead(500).end(); }
   });
-  let app, timer;
+  let app, timer, api;
   try {
+    if (guiToken) {
+      api = await startMockApi();
+      // 使用者先前存過無效 Token；MCP 畫面的 env Token 必須優先使用。
+      writeCredentials(credentialsPath(testEnv), INVALID_TOKEN);
+    }
     await new Promise((resolve) => model.listen(0, "127.0.0.1", resolve));
     const codeMode = excluded
       ? '[features.code_mode]\nenabled = true\nexcluded_tool_namespaces = ["mcp__openfun_data"]\n'
@@ -71,14 +83,16 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
     const allowlist = standalone
       ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled = false\n' +
         '[mcp_servers.openfun-local]\ncommand = "node"\n' +
-        `args = ${JSON.stringify([join(standaloneDir, "server/index.mjs"), "--host=codex"])}\ncwd = ${JSON.stringify(standaloneDir)}\n`
+        `args = ${JSON.stringify([join(standaloneDir, "server/index.mjs"), "--host=codex"])}\ncwd = ${JSON.stringify(standaloneDir)}\n` +
+        (guiToken ? '[mcp_servers.openfun-local.env]\n' +
+          `OPENFUN_API_TOKEN = ${JSON.stringify(GOOD_TOKEN)}\nOPENFUN_DEV_BASE_URL = ${JSON.stringify(api.url)}\n` : "")
       : emptyAllowlist
       ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled_tools = []\n'
       : "";
     writeFileSync(join(codexHome, "config.toml"),
       'model = "gpt-6-astra"\nmodel_provider = "fixture"\n' + codeMode + allowlist +
       `[model_providers.fixture]\nname = "Local test fixture"\nbase_url = "http://127.0.0.1:${model.address().port}/v1"\nwire_api = "responses"\nrequires_openai_auth = false\n`);
-    app = new CodexAppServer({ PATH: process.env.PATH, HOME: userHome, CODEX_HOME: codexHome });
+    app = new CodexAppServer(testEnv);
     let buffer = "";
     const end = new Promise((resolve, reject) => {
       timer = setTimeout(() => reject(new Error("本機模型介面測試逾時")), 30_000);
@@ -111,10 +125,15 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
     assert.ok(count, "應取得 ALL_TOOLS 的實際數量，不能以 MCP startup status 代替");
     const mcp = status.data.find((server) => server.name === (standalone ? "openfun-local" : "openfun-data"));
     assert.ok(mcp, "thread-scoped MCP inventory 應包含歐噴");
+    if (guiToken) {
+      assert.ok(!JSON.stringify(output.output).includes(GOOD_TOKEN), "工具回傳不得包含環境變數 Token");
+      assert.ok(!app.stderr.includes(GOOD_TOKEN), "啟動診斷不得洩漏環境變數 Token");
+    }
     return { mcpCount: Object.keys(mcp.tools).length, count: JSON.parse(count.text).openfunToolCount, output: output.output };
   } finally {
     clearTimeout(timer);
     await app?.close();
+    await api?.close();
     model.closeAllConnections();
     await new Promise((resolve) => model.close(resolve));
     rmSync(base, { recursive: true, force: true });
@@ -152,4 +171,15 @@ test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
   assert.ok(call);
   assert.match(JSON.parse(call.text).content[0].text, /尚未設定可用的歐噴 API Token/);
+});
+
+test("Codex 對話：MCP 畫面環境變數 Token 可驗證，優先於舊 Token 設定檔且不回顯", { skip }, async () => {
+  const result = await runProbe({ standalone: true, guiToken: true });
+  assert.equal(result.count, 11);
+  const call = result.output.find((item) => item.text?.startsWith('{"content":'));
+  assert.ok(call);
+  const config = JSON.parse(call.text);
+  assert.notEqual(config.isError, true);
+  assert.match(config.content[0].text, /Token 有效，已可查詢/);
+  assert.match(config.content[0].text, /環境變數/);
 });

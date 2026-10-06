@@ -176,7 +176,7 @@ function findServerProcess(app) {
 
 const callText = (r) => r.content.map((c) => c.text).join("\n");
 
-test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，11 個工具，未設定時提示在終端機執行 setup.mjs（對話 Token 可選）；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
+test("Codex app-server：從快取啟動 server，11 個工具，提示畫面環境變數與選用 setup.mjs；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
   await withCodex(async ({ app, status, threadId }) => {
     assert.equal(status.pluginId, "openfun-data@openfun");
     assert.equal(status.serverInfo.name, "openfun-data");
@@ -205,7 +205,9 @@ test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，
     assert.equal(r.isError, true);
     const t = callText(r);
     assert.match(t, /尚未設定可用的歐噴 API Token：這次執行中還沒有設定 Token/);
-    assert.ok(t.includes(`node "${join(cache, "setup.mjs")}"`), `預設請使用者在終端機執行快取中的 setup.mjs：${t}`);
+    assert.match(t, /設定 → MCP 伺服器/);
+    assert.match(t, /OPENFUN_API_TOKEN/);
+    assert.ok(t.includes(`node "${join(cache, "setup.mjs")}"`), "選用 setup.mjs 的路徑必須正確");
     assert.ok(t.includes(PROMPT), "對話短效 Token 仍是可選方式");
     assert.match(t, /openfun_set_token/);
     assert.doesNotMatch(t, /Claude Desktop/);

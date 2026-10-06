@@ -8,7 +8,7 @@
 
 AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改任何資料。
 
-兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；Token 可在對話中設定，或用終端機存到本機。
+兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；獨立本機 MCP 的 Token 可直接在設定畫面輸入，也提供對話與終端機方式。
 
 ## 下載安裝檔（v0.1.0 測試版）
 
@@ -28,8 +28,8 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | 安裝檔 | `openfun-claude-extension.mcpb`（必要）＋ `openfun-chat-plugin.zip`（可選指引） | `openfun-codex-plugin.zip`（本機 plugin） |
 | 安裝方式 | 雙擊或在設定畫面安裝 | 新增 GitHub 市集（也提供 ZIP） |
 | 需要 Node.js | 不需要 | 需要 18 以上 |
-| Token 設定 | 擴充套件設定畫面的欄位 | 對話中貼短效 Token，或用終端機存到本機 |
-| Token 存放 | 系統憑證儲存區（加密） | 對話 Token 只存在記憶體；也可存本機設定檔（未加密） |
+| Token 設定 | 擴充套件設定畫面的欄位 | 獨立本機 MCP 的環境變數欄位；也可用對話或終端機 |
+| Token 存放 | 系統憑證儲存區（加密） | 畫面設定存在本機設定檔（未加密）；對話 Token 只存在記憶體 |
 | 完整說明 | [Claude Desktop 說明](docs/CLAUDE_DESKTOP.md) | [Codex plugin 說明](codex/README.md) |
 
 兩個平台都要到 <https://data.openfun.tw/user> 登入，建立**一般 API Token**（不是 Frontend Token）。
@@ -53,22 +53,22 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 1. 到「外掛程式」，選擇「本機」，按「新增 → 新增外掛市集」。
 2. 「來源」填入 `https://github.com/openfunltd/openfun-database-ai-plugins.git`，「Git 參照」填入 `codex-marketplace`，「稀疏路徑」留空。
 3. 在 OpenFun 市集安裝「歐噴資料庫」，開新對話說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
-4. 尚未設定 Token 時，說：「我要在對話中設定歐噴 Token」，依提示貼上短效 Token。
+4. 使用獨立本機 MCP 時，在「設定 → MCP 伺服器」編輯歐噴伺服器，於「環境變數」填入 `OPENFUN_API_TOKEN` 和你的 Token，儲存後重新啟動。對話找不到工具時，依 [Codex 說明](codex/README.md) 請它代為修復。
 
-**Token 會留在對話及工具呼叫紀錄中，建議使用短效 Token；重新啟動後需重貼。** 想讓重新啟動後不用重貼，也可用終端機存到本機設定檔。
+MCP 畫面方式不用終端機或在聊天中貼 Token；本機設定未加密，請勿分享。若選擇在對話中設定，請使用短效 Token；Token 會留在對話與工具呼叫紀錄中，重新啟動後需重貼。
 
 也提供 ZIP，可從「新增外掛程式」上傳，或解壓後新增本機市集。部分桌面版有 ZIP 上傳失敗回報，建議優先使用 GitHub 市集。詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)。
 
 ## Token 注意事項
 
 - Claude Desktop：只在擴充套件設定畫面輸入，由 Claude Desktop 存放在系統憑證儲存區（macOS 鑰匙圈、Windows 認證管理員）；不要貼到 Claude 聊天中。
-- Codex：選擇儲存時存在本機設定檔（`~/.config/openfun-data/credentials.json`，Windows 為 `%APPDATA%\openfun-data\credentials.json`）。檔案未加密，以檔案權限保護；要刪除請執行 `node ~/openfun-codex-plugin/setup.mjs --remove`。
+- Codex：MCP 畫面的環境變數存在 Codex 本機設定，未加密，請勿分享含 Token 的設定檔或截圖。`setup.mjs` 方式另存於本機設定檔（`~/.config/openfun-data/credentials.json`，Windows 為 `%APPDATA%\openfun-data\credentials.json`），未加密，以檔案權限保護；要刪除請執行 `node ~/openfun-codex-plugin/setup.mjs --remove`。
   若選擇在對話中貼 Token，Token 會留在對話紀錄中，建議使用短效 Token，Codex 重新啟動後需重貼。
 
 ## 開發狀態
 
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
-- Codex：安裝後端與 MCP 工具呼叫已用 Codex CLI 0.159.3 驗證。Mac 桌面版仍有已安裝但對話拿不到工具，以及 ZIP 上傳失敗的回報；原因尚未確認，尚未完成桌面版實機驗收。
+- Codex：macOS 15.7.7、Codex 26.930.51102 已由使用者實測，以獨立本機 MCP 完成 Token 檢查與資料查詢。安裝後找不到工具時，可依 [Codex 說明](codex/README.md) 請它代為修復，不用自己輸入指令。外掛附帶 MCP 的工具載入問題及 ZIP 上傳失敗仍待確認；Windows 尚未實機驗收。
 - 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異

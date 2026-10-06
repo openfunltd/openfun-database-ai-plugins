@@ -117,14 +117,14 @@ test("resolveRuntime：Claude 原行為不讀設定檔；Codex 環境變數優�
 
   const withRoot = resolveRuntime(["--host=codex"], { ...env, PLUGIN_ROOT: "/cache/歐噴 p/0.1.0" }, "/ignored/server/index.mjs");
   assert.match(withRoot.host.guideTokenNote, /\/cache\/歐噴 p\/0\.1\.0\/setup\.mjs/);
-  assert.ok(withRoot.host.setupHint.includes('node "/cache/歐噴 p/0.1.0/setup.mjs"'), "需要 Token 時預設請使用者在終端機執行 setup.mjs");
+  assert.ok(withRoot.host.setupHint.includes('node "/cache/歐噴 p/0.1.0/setup.mjs"'), "選用的終端機設定應使用實際 setup.mjs 路徑");
   assert.doesNotMatch(withRoot.host.setupHint, /Claude Desktop/);
 
   for (const bad of [["--host=other"], ["--host="]]) assert.throws(() => resolveRuntime(bad, env, "/x/server/index.mjs"));
   assert.equal(resolveRuntime(["extra"], env, "/x/server/index.mjs").host.kind, "claude-desktop", "其他參數照原行為忽略");
 });
 
-test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版預設以 setup.mjs 存本機、對話短效 Token 為選用且不提 Claude", async () => {
+test("宿主提示：維持 Claude Desktop 原文字；Codex 優先在 MCP 畫面設定、終端機與對話為選用", async () => {
   const { notConfiguredError } = await import("../build/lib/errors.js");
   const { serverInstructions, extensionGuide, EXTENSION_GUIDE, SERVER_INSTRUCTIONS } = await import("../build/lib/tools.js");
   const { codexHost } = await import("../build/lib/host.js");
@@ -140,12 +140,18 @@ test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版預設以 
   for (const text of [codex.hint, host.updateHint, serverInstructions(host), extensionGuide(host)]) {
     assert.ok(text.includes(prompt), `應包含固定提示：${text.slice(0, 80)}`);
     assert.match(text, /openfun_set_token/);
-    // 預設：使用者本人在終端機執行實際路徑的 setup.mjs；AI 不代跑、不讀檔、不轉送 Token、不主動在對話索取
+    // 預設由使用者本人在 MCP 畫面輸入；AI 不代跑、不讀檔、不轉送 Token、不主動在對話索取。
+    assert.match(text, /設定 → MCP 伺服器/);
+    assert.match(text, /OPENFUN_API_TOKEN/);
+    assert.match(text, /環境變數透傳.*留空/);
+    assert.match(text, /未加密/);
     assert.ok(text.includes('node "/p/setup.mjs"'), text.slice(0, 80));
     assert.match(text, /你不能代為執行/);
     assert.match(text, /不要主動請使用者把 Token 貼到對話/);
-    assert.match(text, /不要讀取、顯示或搜尋 Token 設定檔，不要用 shell、curl、命令列參數、環境變數或寫檔/);
-    assert.ok(text.indexOf("setup.mjs") < text.indexOf(prompt), "終端機設定優先於對話方式");
+    assert.match(text, /不要讀取、顯示或搜尋 Token 設定檔或 MCP 環境變數的 Token 值/);
+    assert.match(text, /不要代為用 shell、curl、命令列參數、環境變數或寫檔處理或轉送 Token/);
+    assert.ok(text.indexOf("OPENFUN_API_TOKEN") < text.indexOf("setup.mjs"), "MCP 畫面設定優先於終端機方式");
+    assert.ok(text.indexOf("setup.mjs") < text.indexOf(prompt), "對話方式為選用");
     // 舊值（被拒絕、過期、已清除）不可從聊天紀錄自行再套用；不可有「已提供就不要再索取」的絕對規則
     assert.match(text, /曾被拒絕、已過期或已清除的 Token，不要從聊天紀錄自行再次套用/);
     assert.doesNotMatch(text, /已經提供過時不要再次索取|已經提供時不要重複索取/);
@@ -153,12 +159,16 @@ test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版預設以 
     // 歐噴目前沒有限縮 Token 權限的功能，提示不可要求限縮；也不可宣稱固定的有效期限
     assert.doesNotMatch(text, /限縮|最小權限|唯讀 Token|1 ?小時|一小時/);
   }
-  for (const hint of [codex.hint, host.updateHint]) assert.match(hint, /重新啟動 Codex。也可以選擇在對話中使用(新的)?短效 Token。/);
+  for (const hint of [codex.hint, host.updateHint]) {
+    assert.match(hint, /儲存後重新啟動 Codex/);
+    assert.match(hint, /或選擇在對話中使用短效 Token|也可選擇在對話中使用新的短效 Token/);
+  }
   assert.match(host.updateHint, /請不要再套用同一個 Token/);
-  assert.match(extensionGuide(host), /只檢查格式、不連網；重新啟動後用 openfun_check_config/);
+  assert.match(extensionGuide(host), /setup.mjs 只檢查格式、不連網/);
+  assert.match(extensionGuide(host), /重新啟動後用 openfun_check_config/);
   assert.match(extensionGuide(host), /node "\/p\/setup\.mjs" --remove/);
   assert.match(extensionGuide(host), /重新啟動後需要重貼/);
-  assert.match(extensionGuide(host), /不會刪除設定檔或對話紀錄，也不會撤銷 Token/);
+  assert.match(extensionGuide(host), /不會刪除環境變數、本機設定檔或對話紀錄，也不會撤銷 Token/);
   assert.match(extensionGuide(host), /openfun_clear_token/);
 });
 

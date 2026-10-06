@@ -58,7 +58,7 @@ src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
 src/schema.ts          meta.schema 解析
 src/config.ts          環境變數與開發覆寫
-src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 預設以 setup.mjs 存本機，對話短效 Token 為選用）
+src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 獨立 MCP 建議畫面環境變數，setup.mjs／對話 Token 為選用）
 src/runtime.ts         啟動參數（--host=codex）與 Token 來源解析
 src/credentials.ts     Codex 的 Token 設定檔讀寫（0700／0600）
 src/codex-setup*.ts    Codex 的 setup.mjs（互動輸入 Token、--status、--remove）
@@ -162,7 +162,9 @@ MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `ena
 以 `[mcp_servers.openfun-local]` 啟動同一支程式（`--host=codex`），並只停用外掛附帶的 MCP。
 實際對話仍能取得 11 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
 [官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，可用來區分外掛 MCP 與獨立 MCP 的載入差異；
-尚未在回報問題的 Mac 上驗證，不能宣稱已解決桌面版問題。
+使用者已於 2026-10-06 在 macOS 15.7.7（24G720）、Codex 26.930.51102 回報此替代方式成功：
+`openfun-local` 可呼叫，`openfun_check_config` 回報 Token 有效，並完成「開放文化基金會」的搜尋與記錄查詢，
+沒有重新設定 Token。此為該環境的使用者實測回報；外掛附帶 MCP 的載入根因、ZIP 上傳失敗及 Windows 實機驗收仍待確認。
 
 ### 格式與 Codex 的解析規則（依 Codex 0.159.3 原始碼與實測）
 
@@ -192,9 +194,12 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 
 ### Token
 
-桌面版可上傳 ZIP 或新增本機市集，聊天 Token 不需要終端機。選擇持久儲存時執行
-`node <解壓資料夾>/setup.mjs`，使用者存一次，之後每次啟動 server 都會讀取。缺少或失效時，host 提示請使用者本人在終端機執行
-`node "<PLUGIN_ROOT>/setup.mjs"` 後重新啟動，不預設在對話索取 Token；AI 不能代跑這個 TTY 程式，也不讀取或轉送 Token 檔。
+獨立本機 MCP 建議由使用者本人在設定畫面的「環境變數」輸入 `OPENFUN_API_TOKEN`，不需要終端機或聊天 Token。
+值存入 Codex 本機設定，未加密；程式啟動時優先使用此值。AI 不讀取或轉寫這個值。
+`test/codex-model-tools.test.mjs` 驗證實際 Codex 將 MCP env 傳入程式、環境變數 Token 優先於舊設定檔、
+設定檢查能成功且不回顯 Token；全部使用本機模擬 API 與假 Token。
+選用的持久方式是使用者本人執行 `node <解壓資料夾>/setup.mjs`，存一次後啟動時讀取。
+不預設在對話索取 Token；AI 不能代跑這個 TTY 程式，也不讀取或轉送 Token 檔。
 
 - 位置：POSIX 家目錄下的 `.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
   只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
@@ -202,7 +207,7 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
   Token 是否有效由重新啟動後的 `openfun_check_config`（`GET /api/v1/me`）確認。
 - server 讀取時拒絕權限過寬（POSIX `mode & 077`）、非本人擁有、符號連結、格式錯誤或不合法的 Token。
   設定檔在啟動時讀取，所以更新後需重新啟動 Codex。
-- `OPENFUN_API_TOKEN` 有值時優先（但 Codex 預設不傳遞它）。Windows 不設定 ACL，檔案沿用使用者設定目錄的權限；不是加密儲存。
+- `OPENFUN_API_TOKEN` 有值時優先；獨立 MCP 可在設定畫面明確設定，外掛附帶 MCP 預設不傳遞它。Windows 不設定 ACL，Token 設定檔沿用使用者設定目錄的權限；不是加密儲存。
 
 選用的對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
 

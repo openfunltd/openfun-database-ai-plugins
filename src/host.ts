@@ -1,6 +1,6 @@
 /**
  * 不同宿主（Claude Desktop 擴充套件、Codex plugin）在「Token 怎麼設定」上不同：Claude Desktop 用擴充套件
- * 設定欄位；Codex 預設由使用者在終端機執行 setup.mjs 存到本機設定檔，另有 openfun_set_token／openfun_clear_token
+ * 設定欄位；Codex 獨立本機 MCP 優先由使用者在畫面的環境變數設定，另有 setup.mjs 與 openfun_set_token／openfun_clear_token
  * 讓選擇對話方式的使用者在對話中設定。
  * 查詢、驗證、遮蔽與錯誤語意完全相同。未指定時一律為 Claude Desktop（MCPB 的原行為）。
  */
@@ -36,16 +36,21 @@ export const CLAUDE_DESKTOP_HOST: HostProfile = {
   instructionsTokenNote: "Token 已在擴充套件設定中，不要在聊天中索取。",
 };
 
-/** 使用者選擇在對話中設定 Token 時的固定提示（選用方式；預設是在終端機執行 setup.mjs）。 */
+/** 使用者選擇在對話中設定 Token 時的固定提示（選用方式）。 */
 export const CODEX_CHAT_TOKEN_PROMPT =
   "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
 const TOKEN_PAGE_NOTE = `建立與撤銷 Token：${TOKEN_PAGE_URL}（一般 API Token，不是 Frontend Token）。`;
+const CODEX_MCP_TOKEN_HINT =
+  "在 Codex「設定 → MCP 伺服器」編輯獨立本機歐噴伺服器（例如 openfun-local），" +
+  "在「環境變數」新增金鑰 OPENFUN_API_TOKEN，值貼上 Token；「環境變數透傳」留空，儲存後重新啟動 Codex。";
 
 function codexAssistantRule(setupCommand: string): string {
   return (
-    `預設請使用者本人在自己的終端機執行 ${setupCommand}，依提示貼上 Token 存到本機設定檔，再重新啟動 Codex；` +
-    "你不能代為執行（它只接受終端機輸入），不要主動請使用者把 Token 貼到對話，目前已有可用的 Token 時也不要再索取。" +
-    "不要讀取、顯示或搜尋 Token 設定檔，不要用 shell、curl、命令列參數、環境變數或寫檔處理或轉送 Token，也不要在回覆中重複 Token 的全部或任何一部分。" +
+    `預設請使用者本人${CODEX_MCP_TOKEN_HINT}` +
+    "這個值會存入 Codex 本機設定，未加密，請勿分享含有 Token 的設定檔或截圖。" +
+    `若沒有可編輯的獨立 MCP，使用者也可在自己的終端機執行 ${setupCommand}，依提示貼上 Token 存到本機設定檔，再重新啟動 Codex。` +
+    "你不能代為執行 setup.mjs（它只接受終端機輸入），不要主動請使用者把 Token 貼到對話，目前已有可用的 Token 時也不要再索取。" +
+    "不要讀取、顯示或搜尋 Token 設定檔或 MCP 環境變數的 Token 值；不要代為用 shell、curl、命令列參數、環境變數或寫檔處理或轉送 Token，也不要在回覆中重複 Token 的全部或任何一部分。" +
     `使用者明確選擇在對話中設定，或主動貼出還沒設定過的 Token 時，才用 openfun_set_token 設定（請求時說：「${CODEX_CHAT_TOKEN_PROMPT}」）；` +
     "這種 Token 只存在本程序記憶體，Codex 重新啟動後需要重貼。" +
     "曾被拒絕、已過期或已清除的 Token，不要從聊天紀錄自行再次套用（除非使用者明確要求重新使用）。"
@@ -53,7 +58,7 @@ function codexAssistantRule(setupCommand: string): string {
 }
 
 /**
- * Codex plugin：預設由使用者本人在終端機執行 plugin 內的 setup.mjs，把 Token 存到本機設定檔（啟動時載入）。
+ * Codex：獨立本機 MCP 優先在設定畫面的 OPENFUN_API_TOKEN 環境變數輸入；setup.mjs 為選用方式。
  * 選用：使用者也可以在對話中貼短效 Token，經 openfun_set_token 驗證後只存在本 MCP server 程序的記憶體。
  */
 export function codexHost(setupScriptPath: string): HostProfile {
@@ -62,20 +67,24 @@ export function codexHost(setupScriptPath: string): HostProfile {
   return {
     kind: "codex",
     setupHint:
-      `請到 ${TOKEN_PAGE_URL} 建立一般 API Token，在自己的終端機執行 ${setupCommand} 依提示貼上（輸入不會顯示），` +
-      `存好後重新啟動 Codex。也可以選擇在對話中使用短效 Token。（給 AI 助理：${rule}）`,
+      `請到 ${TOKEN_PAGE_URL} 建立一般 API Token，${CODEX_MCP_TOKEN_HINT}` +
+      `也可使用 ${setupCommand} 存到本機，或選擇在對話中使用短效 Token。（給 AI 助理：${rule}）`,
     updateHint:
       `這個 Token 不能用了，請不要再套用同一個 Token。請到 ${TOKEN_PAGE_URL} 建立新的一般 API Token，` +
-      `在自己的終端機執行 ${setupCommand} 更新，再重新啟動 Codex。也可以選擇在對話中使用新的短效 Token。（給 AI 助理：${rule}）`,
+      `${CODEX_MCP_TOKEN_HINT}若原本使用 setup.mjs，則在自己的終端機執行 ${setupCommand} 更新。` +
+      `MCP 環境變數的值優先於本機 Token 設定檔；也可選擇在對話中使用新的短效 Token。（給 AI 助理：${rule}）`,
     emptyReason: "這次執行中還沒有設定 Token。",
-    guideTokenNote: `這個 Codex plugin 的查詢工具都是唯讀。Token 預設由使用者本人在終端機執行 ${setupCommand} 存到本機設定檔
-（未加密，以檔案權限保護），Codex 啟動時讀取；存一次即可，直到 Token 過期、撤銷或被移除才需要更新。
+    guideTokenNote: `這個 Codex plugin 的查詢工具都是唯讀。獨立本機 MCP 建議由使用者本人在設定畫面的 OPENFUN_API_TOKEN 環境變數輸入 Token。
+Token 存在 Codex 本機設定，未加密；存一次即可，直到 Token 過期、撤銷或被移除才需要更新。
 需要 Token 時（工具回報尚未設定或 Token 失效），請使用者到 ${TOKEN_PAGE_URL} 建立一般 API Token（不是 Frontend Token），
-在自己的終端機執行 ${setupCommand} 設定或更新，再重新啟動 Codex。setup.mjs 只檢查格式、不連網；重新啟動後用 openfun_check_config 向歐噴確認是否有效。
+${CODEX_MCP_TOKEN_HINT}重新啟動後用 openfun_check_config 向歐噴確認是否有效。
+選用：使用者本人在自己的終端機執行 ${setupCommand} 存到本機 Token 設定檔（未加密，以檔案權限保護）；setup.mjs 只檢查格式、不連網。
+啟動時環境變數的 Token 優先於本機 Token 設定檔；若使用環境變數，請在 MCP 畫面更新該值。
 ${rule}
 對話設定的 Token 在同一個 Codex 執行中的其他對話也可能共用。
-openfun_clear_token 只清除本程序記憶體中的 Token，不會刪除設定檔或對話紀錄，也不會撤銷 Token；重新啟動 Codex 後可能再次載入設定檔。
-要刪除設定檔，請使用者自己在終端機執行 ${setupCommand} --remove。
+openfun_clear_token 只清除本程序記憶體中的 Token，不會刪除環境變數、本機設定檔或對話紀錄，也不會撤銷 Token；重新啟動 Codex 後可能再次載入。
+要移除畫面設定，請使用者本人刪除 MCP 的 OPENFUN_API_TOKEN 項目；要刪除本機 Token 設定檔，請使用者自己執行 ${setupCommand} --remove。
+只刪除其中一處，重新啟動後仍可能從另一處載入 Token。
 無法從 Token 判斷有效期限，不要宣稱已確認它是短效 Token。
 不要使用 Device Authorization 流程。`,
     instructionsTokenNote: `需要 Token 時：${rule}無法從 Token 判斷有效期限。`,
