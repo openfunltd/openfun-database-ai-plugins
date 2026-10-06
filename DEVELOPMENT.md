@@ -146,6 +146,18 @@ OPENFUN_API_TOKEN=xxx npx @modelcontextprotocol/inspector node build/bundle/serv
 
 ## Codex plugin
 
+### 對話工具驗證
+
+`test/codex-model-tools.test.mjs` 以實際 Codex app-server、隔離的家目錄與本機模擬模型，從打包 ZIP
+啟動選取的外掛，送出對話並執行 `functions.exec`：確認 `ALL_TOOLS` 有 11 個歐噴工具，再實際呼叫
+`openfun_check_config`。不使用真實模型、帳號或 Token。
+
+測試也驗證兩種限制：`features.code_mode.excluded_tool_namespaces` 排除歐噴 namespace 時，
+MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `enabled_tools = []` 則讓兩者都為 0。
+因此 MCP 的 `ready` 日誌或獨立工具呼叫成功，不能取代出問題對話的工具清單驗證。
+這些是可重現的設定案例，**尚未確認是 Mac 桌面版回報的原因**，也不能以 Linux 測試取代 Mac 實機驗收。
+設定意義見 [OpenAI 官方設定參考](https://learn.chatgpt.com/docs/config-file/config-reference)。
+
 ### 格式與 Codex 的解析規則（依 Codex 0.159.3 原始碼與實測）
 
 採官方建議的 portable 格式：根目錄 `plugin.json`（`$schema` 為 Agent Plugins 1.0.0，Codex 專屬介面設定放在
