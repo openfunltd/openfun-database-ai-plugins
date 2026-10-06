@@ -1,20 +1,19 @@
 /**
  * 啟動參數解析。Claude Desktop MCPB 不帶參數（原行為：Token 只來自 OPENFUN_API_TOKEN）。
- * Codex plugin 的 mcp.json 帶 `--host=codex`：OPENFUN_API_TOKEN 有值時優先使用，
- * 否則讀取使用者設定檔（見 credentials.ts）。
+ * Codex plugin 的 mcp.json 帶 `--host=codex`：啟動時 OPENFUN_API_TOKEN 有值時優先使用，
+ * 否則讀取使用者設定檔（見 credentials.ts，進階選用）；都沒有時由使用者在對話中設定（見 session.ts）。
  */
 
 import { dirname, isAbsolute, join, resolve } from "node:path";
 import { type RuntimeConfig, loadConfig } from "./config.js";
 import { credentialsPath, readCredentials } from "./credentials.js";
 import { CLAUDE_DESKTOP_HOST, type HostProfile, codexHost } from "./host.js";
-
-export type TokenSource = "env" | "credentials-file" | "none";
+import type { TokenSource } from "./session.js";
 
 export interface ResolvedRuntime {
   config: RuntimeConfig;
   host: HostProfile;
-  tokenSource: TokenSource;
+  tokenSource: Extract<TokenSource, "env" | "credentials-file" | "none">;
 }
 
 export function resolveRuntime(argv: string[], env: NodeJS.ProcessEnv, scriptPath: string): ResolvedRuntime {

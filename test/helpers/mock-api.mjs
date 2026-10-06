@@ -6,6 +6,9 @@ export const GOOD_TOKEN = "ofk_TEST_good_token_1234567890";
 export const EXPIRED_TOKEN = "ofk_TEST_expired_token_000";
 export const INVALID_TOKEN = "ofk_TEST_invalid_token_000";
 export const QUOTA_TOKEN = "ofk_TEST_quota_token_000";
+// 不是 ofk_ 開頭的有效 Token（相容舊格式）：遮蔽不能靠 ofk_ 樣式比對，只能靠實際使用的 Token 值
+export const ALT_TOKEN = "altTEST-legacy-format-token-0001";
+export const ALT_TOKEN_2 = "altTEST-legacy-format-token-0002";
 
 export const COMPANY_SLUG = "tw.test~ref~company";
 
@@ -105,7 +108,7 @@ export async function startMockApi() {
     const requireToken = () => {
       if (!token) return send(res, 401, { error: "Unauthorized", message: "此 API 需要 Bearer Token 認證。", hint: "device flow..." }), false;
       if (token === EXPIRED_TOKEN) return send(res, 401, { error: "TokenExpired", message: "您提供的 API Token 已過期。" }), false;
-      if (token !== GOOD_TOKEN && token !== QUOTA_TOKEN) return send(res, 401, { error: "InvalidToken", message: "提供的 Bearer Token 無效或已被撤銷。" }), false;
+      if (![GOOD_TOKEN, QUOTA_TOKEN, ALT_TOKEN, ALT_TOKEN_2].includes(token)) return send(res, 401, { error: "InvalidToken", message: "提供的 Bearer Token 無效或已被撤銷。" }), false;
       return true;
     };
 

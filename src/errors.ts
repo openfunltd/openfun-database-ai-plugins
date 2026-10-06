@@ -73,18 +73,23 @@ const MAX_ERROR_TEXT_CHARS = 12_000;
 const TOKEN_LIKE = /\bofk_[A-Za-z0-9_\-]{4,}/g;
 const BEARER_LIKE = /(Bearer\s+)[^\s"'<>]+/gi;
 
+/** 要遮蔽的 Token：單一值，或 Token 取代期間同時涉及的多個值（例如新舊 Token）。 */
+export type Secrets = string | null | undefined | ReadonlyArray<string | null | undefined>;
+
 /** 從任何要輸出的文字中遮蔽 Token。 */
-export function redact(text: string, token: string | null | undefined): string {
+export function redact(text: string, token: Secrets): string {
   let out = text;
-  // 任何非空 Token 都遮蔽；過短的 Token 已在 config.checkToken 階段被拒絕，不會走到這裡
-  if (token) out = out.split(token).join("[已遮蔽]");
+  // 任何非空 Token 都遮蔽；過短的 Token 已在 config.checkToken 階段被拒絕，不會走到這裡。
+  // 長的先處理，避免較短的值先被替換後留下較長值的片段。
+  const list = (Array.isArray(token) ? [...token] : [token]).filter((t): t is string => typeof t === "string" && t !== "");
+  for (const t of list.sort((a, b) => b.length - a.length)) out = out.split(t).join("[已遮蔽]");
   out = out.replace(BEARER_LIKE, "$1[已遮蔽]");
   out = out.replace(TOKEN_LIKE, "[已遮蔽]");
   return out;
 }
 
 /** 清理 API 錯誤訊息：去 HTML、壓縮空白、限制長度。 */
-export function sanitizeMessage(raw: unknown, token: string | null, max = 300): string | null {
+export function sanitizeMessage(raw: unknown, token: Secrets, max = 300): string | null {
   if (typeof raw !== "string") return null;
   let s = raw.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
   if (s === "") return null;
@@ -99,7 +104,7 @@ export function notConfiguredError(problem: string | null, host: HostProfile = C
 }
 
 /** 將錯誤轉成工具回應文字（不含 Token 與原始 HTML）。 */
-export function formatError(err: unknown, token: string | null): string {
+export function formatError(err: unknown, token: Secrets): string {
   const e =
     err instanceof OpenFunError
       ? err

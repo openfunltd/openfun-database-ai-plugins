@@ -12,7 +12,7 @@ async function main(): Promise<void> {
     process.exit(1);
   }
   const { config, host, tokenSource } = runtime;
-  const server = createServer(config, { host });
+  const server = createServer(config, { host, tokenSource });
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(

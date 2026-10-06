@@ -1,8 +1,9 @@
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { z } from "zod";
-import { OpenFunClient, assertSlug, paths } from "./client.js";
-import { OpenFunError, notConfiguredError } from "./errors.js";
+import { type OpenFunClient, assertSlug, paths } from "./client.js";
+import { MIN_TOKEN_LENGTH } from "./config.js";
+import { OpenFunError, formatError, notConfiguredError, redact } from "./errors.js";
 import { CLAUDE_DESKTOP_HOST, type HostProfile } from "./host.js";
 import { expectAgg, expectDatasetDetail, expectDatasetList, expectMe, expectRecord, expectRecords, expectSearch } from "./contracts.js";
 import {
@@ -20,6 +21,7 @@ import {
   truncateText,
 } from "./format.js";
 import { buildAggQuery, buildRecordsQuery, type FilterValue, type RangeSpec } from "./query.js";
+import { type TokenSession, type TokenSource } from "./session.js";
 import { type DatasetDetail, describeSchema, getSchema, indexSchema, listForMessage, queryHints, type SchemaIndex } from "./schema.js";
 
 const READ_ONLY = { readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: true } as const;
@@ -43,7 +45,7 @@ ${host.guideTokenNote}
 | 依 ID 取單筆記錄 | openfun_get_record |
 | 分組計數、加總、平均等統計 | openfun_aggregate |
 | 確認 Token 設定是否有效 | openfun_check_config |
-
+${host.kind === "codex" ? "| 使用者在對話中貼出 Token 後設定（驗證成功才取代） | openfun_set_token |\n| 清除本次執行中的 Token | openfun_clear_token |\n" : ""}
 建議流程：openfun_search → openfun_get_dataset / openfun_get_skill → openfun_query_records 或 openfun_aggregate。
 slug 一律從搜尋結果取得，不要猜。
 
@@ -128,6 +130,7 @@ interface Ctx {
   token: string | null;
   detailCache: Map<string, { at: number; detail: DatasetDetail }>;
   now: () => number;
+  source: TokenSource;
 }
 
 async function getDetail(ctx: Ctx, slug: string): Promise<DatasetDetail> {
@@ -222,13 +225,92 @@ function validateRecordsFields(
   }
 }
 
+// ---------- 對話 Token（只有 Codex） ----------
+
+const TOKEN_SOURCE_LABEL: Record<TokenSource, string> = {
+  env: "環境變數 OPENFUN_API_TOKEN（啟動時載入）",
+  "credentials-file": "本機設定檔（setup.mjs 設定，啟動時載入）",
+  chat: "對話中設定（只存在本機 MCP server 記憶體，重新啟動後需要重貼）",
+  cleared: "已清除",
+  none: "未設定",
+};
+
+const CHAT_TOKEN_NOTES = [
+  "Token 只存在這個本機 MCP server 程序的記憶體，本工具不會把它寫入檔案或記錄檔；Codex 重新啟動後需要重新貼上。",
+  "同一個 Codex 執行中的其他對話也可能共用這個 Token。",
+  "Token 仍留在對話與工具呼叫紀錄中；不要分享此對話，用完可到 https://data.openfun.tw/user 撤銷。",
+  "本工具無法從 Token 判斷有效期限，有效期限以你在歐噴建立 Token 時的設定為準。",
+];
+
+function registerTokenTools(server: McpServer, session: TokenSession): void {
+  // Token 管理工具會改變本程序狀態，所以不是 readOnly；不修改任何遠端資料。
+  server.registerTool(
+    "openfun_set_token",
+    {
+      title: "設定歐噴 Token（本次執行）",
+      description:
+        "使用者自願在對話中貼出歐噴 API Token 後呼叫，把 Token 原樣放在 token 參數。會先檢查格式，再以固定的 GET https://data.openfun.tw/api/v1/me 驗證；驗證成功才取代目前的 Token，失敗時保留原本狀態。Token 只存在本機 MCP server 程序的記憶體（重新啟動後需要重貼），不寫檔、不顯示 Token。不要用 shell、curl、命令列或寫檔處理 Token，回覆中也不要重複 Token 的任何部分。",
+      inputSchema: {
+        token: z.string().max(4096).describe("使用者在對話中貼出的歐噴 API Token（只放 Token 本身）"),
+      },
+      annotations: { title: "設定歐噴 Token（本次執行）", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: true },
+    },
+    async ({ token }) => {
+      // 失敗時的輸出同時遮蔽新貼的值與目前有效的 Token
+      const current = session.snapshot().client.secretForRedaction;
+      const secrets = [token.trim().length >= MIN_TOKEN_LENGTH ? token.trim() : null, current];
+      try {
+        const r = await session.setToken(token);
+        const replaced = r.previous.client.hasToken ? `已取代先前的 Token（來源：${TOKEN_SOURCE_LABEL[r.previous.source]}）。` : "";
+        const lines = [
+          `Token 已通過驗證並設定，可以開始查詢。${replaced}`,
+          json({ service: session.snapshot().client.baseUrl, account_display_name: r.displayName, account_email_masked: maskEmail(r.email) }),
+          ...CHAT_TOKEN_NOTES,
+        ];
+        return { content: [{ type: "text", text: redact(lines.join("\n"), [...secrets, r.previous.client.secretForRedaction]) }] };
+      } catch (err) {
+        const text = formatError(err, secrets).replace(/\n（這是錯誤，不代表「查無資料」。[^\n]*$/, "");
+        return { isError: true, content: [{ type: "text", text: `新 Token 未套用，目前狀態維持不變。\n${text}` }] };
+      }
+    },
+  );
+
+  server.registerTool(
+    "openfun_clear_token",
+    {
+      title: "清除歐噴 Token（本次執行）",
+      description:
+        "清除這個本機 MCP server 程序記憶體中目前有效的歐噴 Token（不論來自對話、設定檔或環境變數）。清除後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數，直到使用者再次設定或重新啟動。不會刪除設定檔、不會刪除對話紀錄，也不會撤銷 Token。",
+      inputSchema: {},
+      annotations: { title: "清除歐噴 Token（本次執行）", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    async () => {
+      const { previous } = await session.clearToken();
+      const lines = [
+        previous.client.hasToken
+          ? `已清除本程序記憶體中的 Token（原來源：${TOKEN_SOURCE_LABEL[previous.source]}）。`
+          : "本程序目前沒有有效的 Token；狀態已設為清除。",
+        "之後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數；要繼續查詢請重新貼上 Token。",
+        "這不會刪除對話紀錄中的 Token，也不會撤銷 Token；要讓 Token 失效請到 https://data.openfun.tw/user 撤銷。",
+        "既有的本機設定檔（setup.mjs）或環境變數不會被刪除，重新啟動 Codex 後可能再次載入；要移除設定檔請自己在終端機執行 setup.mjs --remove。",
+      ];
+      return { content: [{ type: "text", text: redact(lines.join("\n"), previous.client.secretForRedaction) }] };
+    },
+  );
+}
+
 // ---------- 工具註冊 ----------
 
-export function registerTools(server: McpServer, client: OpenFunClient, opts: { now?: () => number } = {}): void {
-  const ctx: Ctx = { client, token: client.secretForRedaction, detailCache: new Map(), now: opts.now ?? Date.now };
-  const run = async (fn: () => Promise<CallToolResult>): Promise<CallToolResult> => {
+export function registerTools(server: McpServer, session: TokenSession, opts: { now?: () => number } = {}): void {
+  const now = opts.now ?? Date.now;
+  const host = session.host;
+  // 每次呼叫開始時取一次快照：header、schema 快取與輸出遮蔽都用同一個 Token，
+  // 呼叫進行中 Token 被取代或清除也不影響（舊 Token 仍會被遮蔽）。
+  const run = async (fn: (ctx: Ctx) => Promise<CallToolResult>): Promise<CallToolResult> => {
+    const snap = session.snapshot();
+    const ctx: Ctx = { client: snap.client, token: snap.client.secretForRedaction, detailCache: snap.detailCache, now, source: snap.source };
     try {
-      return await fn();
+      return await fn(ctx);
     } catch (err) {
       return fail(err, ctx.token);
     }
@@ -244,14 +326,14 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "歐噴資料庫使用說明", ...READ_ONLY },
     },
     () =>
-      run(async () => {
-        const guide = extensionGuide(client.host);
-        const llmsUrl = client.publicUrl(paths.llms());
+      run(async (ctx) => {
+        const guide = extensionGuide(ctx.client.host);
+        const llmsUrl = ctx.client.publicUrl(paths.llms());
         const heading = `# 線上說明（${llmsUrl}）\n`;
         const cutNote = `\n…［線上說明過長，已截斷；完整內容請見 ${llmsUrl}］`;
         let online: string;
         try {
-          const { text } = await client.getText(paths.llms(), { auth: "none" });
+          const { text } = await ctx.client.getText(paths.llms(), { auth: "none" });
           // 依實際排版後的固定部分計算可用字數，llms.txt 為純文字說明，截斷時明確標示
           const overhead = responseSize(ctx.token, [guide, heading + external(cutNote)]);
           const t = truncateText(text, MAX_TOOL_TEXT_CHARS - overhead - 200);
@@ -269,21 +351,24 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
     {
       title: "檢查 Token 設定",
       description:
-        "檢查擴充套件設定的歐噴 API Token 是否有效（呼叫 GET /api/v1/me），回報連線服務、Token 狀態與帳號顯示名稱（email 會部分遮蔽）。使用者問「設定好了嗎」或其他工具出現 Token／權限錯誤時使用。不會顯示 Token。",
+        host.kind === "codex"
+          ? "檢查目前使用的歐噴 API Token 是否有效（呼叫 GET /api/v1/me），回報連線服務、Token 狀態、Token 來源與帳號顯示名稱（email 會部分遮蔽）。使用者問「設定好了嗎」或其他工具出現 Token／權限錯誤時使用。不會顯示 Token，也無法判斷 Token 的有效期限。"
+          : "檢查擴充套件設定的歐噴 API Token 是否有效（呼叫 GET /api/v1/me），回報連線服務、Token 狀態與帳號顯示名稱（email 會部分遮蔽）。使用者問「設定好了嗎」或其他工具出現 Token／權限錯誤時使用。不會顯示 Token。",
       inputSchema: {},
       annotations: { title: "檢查 Token 設定", ...READ_ONLY },
     },
     () =>
-      run(async () => {
-        if (!client.hasToken) throw notConfiguredError(client.tokenProblem, client.host);
-        const { data } = await client.getJson(paths.me(), { auth: "required" });
+      run(async (ctx) => {
+        if (!ctx.client.hasToken) throw notConfiguredError(ctx.client.tokenProblem, ctx.client.host);
+        const { data } = await ctx.client.getJson(paths.me(), { auth: "required" });
         const me = expectMe(data);
         return ok(
           ctx.token,
           [
             json({
               status: "Token 有效，已可查詢",
-              service: client.baseUrl,
+              service: ctx.client.baseUrl,
+              ...(host.kind === "codex" ? { token_source: TOKEN_SOURCE_LABEL[ctx.source] } : {}),
               account_display_name: me.display_name,
               account_email_masked: maskEmail(me.email),
             }),
@@ -292,6 +377,8 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
         );
       }),
   );
+
+  if (host.kind === "codex") registerTokenTools(server, session);
 
   server.registerTool(
     "openfun_search",
@@ -307,11 +394,11 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "搜尋資料集與資料主體", ...READ_ONLY },
     },
     ({ query, per_dataset, max_datasets }) =>
-      run(async () => {
+      run(async (ctx) => {
         const parts = [`q=${encodeURIComponent(query)}`];
         if (per_dataset !== undefined) parts.push(`per_dataset=${per_dataset}`);
         if (max_datasets !== undefined) parts.push(`max_datasets=${max_datasets}`);
-        const { data: raw } = await client.getJson(paths.search(), { query: parts.join("&"), auth: "optional" });
+        const { data: raw } = await ctx.client.getJson(paths.search(), { query: parts.join("&"), auth: "optional" });
         const data = expectSearch(raw);
         const ds = data.datasets.results;
         const groups = data.entities.groups;
@@ -375,10 +462,10 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "列出資料集", ...READ_ONLY },
     },
     ({ query, category, offset, limit }) =>
-      run(async () => {
+      run(async (ctx) => {
         if (query && category) throw new OpenFunError("validation", "query 與 category 請擇一使用（API 有 query 時會忽略 category）");
         const qs = query ? `q=${encodeURIComponent(query)}` : category ? `category=${encodeURIComponent(category)}` : "";
-        const { data: raw } = await client.getJson(paths.datasets(), { query: qs, auth: "required" });
+        const { data: raw } = await ctx.client.getJson(paths.datasets(), { query: qs, auth: "required" });
         const data = expectDatasetList(raw);
         const all = data.datasets;
         const slice = all.slice(offset, offset + limit);
@@ -423,7 +510,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "資料集詳細資訊與 schema", ...READ_ONLY },
     },
     ({ slug }) =>
-      run(async () => {
+      run(async (ctx) => {
         ctx.detailCache.delete(slug);
         const d = await getDetail(ctx, slug);
         const columns = getSchema(d);
@@ -485,10 +572,10 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "讀取資料集使用指引", ...READ_ONLY },
     },
     ({ slug, offset, max_chars }) =>
-      run(async () => {
+      run(async (ctx) => {
         let text: string;
         try {
-          ({ text } = await client.getText(paths.skill(slug), { auth: "optional" }));
+          ({ text } = await ctx.client.getText(paths.skill(slug), { auth: "optional" }));
         } catch (err) {
           if (err instanceof OpenFunError && err.kind === "not_found") {
             throw new OpenFunError("not_found", `資料集 ${slug} 沒有 skill.md，或此 Token 沒有讀取權限。`, {
@@ -505,7 +592,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
         const part = text.slice(offset, offset + max_chars);
         const end = offset + part.length;
         const header =
-          `skill.md：${slug}（${client.publicUrl(paths.skill(slug))}）\n` +
+          `skill.md：${slug}（${ctx.client.publicUrl(paths.skill(slug))}）\n` +
           `文件共 ${total} 字，本次顯示第 ${total === 0 ? 0 : offset + 1}–${end} 字。` +
           (end < total ? `尚未讀完，下一段請用 offset=${end}。` : "已讀完。");
         return ok(
@@ -563,7 +650,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "查詢資料記錄", ...READ_ONLY },
     },
     (args) =>
-      run(async () => {
+      run(async (ctx) => {
         const warnings: string[] = [];
         const detail = await detailForValidation(ctx, args.slug, warnings);
         assertQueryable(detail, args.slug);
@@ -596,7 +683,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
           ids: args.ids,
         });
         const path = paths.records(args.slug);
-        const { data: raw } = await client.getJson(path, { query: qs, auth: "required" });
+        const { data: raw } = await ctx.client.getJson(path, { query: qs, auth: "required" });
         const data = expectRecords(raw);
         const records: unknown[] = data.records;
         const total = data.total;
@@ -615,7 +702,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
         const lastOnPage = firstIndex + records.length - 1;
         const hasMore = page * perPage < total;
         const totalPages = Math.ceil(total / perPage);
-        const apiUrl = client.publicUrl(path, qs);
+        const apiUrl = ctx.client.publicUrl(path, qs);
         const source = sourceInfo(ctx, args.slug, detail);
 
         const render = (shown: unknown[], info: FitInfo): string[] => {
@@ -696,7 +783,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "取得單筆記錄", ...READ_ONLY },
     },
     ({ slug, record_id, fields }) =>
-      run(async () => {
+      run(async (ctx) => {
         const warnings: string[] = [];
         const detail = await detailForValidation(ctx, slug, warnings);
         assertQueryable(detail, slug);
@@ -707,14 +794,14 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
           if (bad.length) throw unknownFieldError("fields", bad, names);
         }
         const path = paths.record(slug, record_id);
-        const { data } = await client.getJson(path, { auth: "required" });
+        const { data } = await ctx.client.getJson(path, { auth: "required" });
         let record: Record<string, unknown> = expectRecord(data);
         if (fields) {
           const keep = new Set(fields);
           record = Object.fromEntries(Object.entries(record).filter(([k]) => keep.has(k)));
         }
         const source = sourceInfo(ctx, slug, detail);
-        const apiUrl = client.publicUrl(path);
+        const apiUrl = ctx.client.publicUrl(path);
         const render = (rec: unknown, note: string): string[] => {
           const result: Record<string, unknown> = { source, request: { api_url: apiUrl } };
           if (warnings.length) result.warnings = warnings;
@@ -762,7 +849,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
       annotations: { title: "統計聚合", ...READ_ONLY },
     },
     (args) =>
-      run(async () => {
+      run(async (ctx) => {
         const warnings: string[] = [];
         const detail = await detailForValidation(ctx, args.slug, warnings);
         assertQueryable(detail, args.slug);
@@ -782,7 +869,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
         if (args.metrics && !args.field) warnings.push("metrics 只在提供 field 時有作用。");
         const qs = buildAggQuery({ groupBy: args.group_by, field: args.field, metrics: args.metrics, filters, asOf: args.as_of });
         const path = paths.agg(args.slug);
-        const { data: raw } = await client.getJson(path, { query: qs, auth: "required" });
+        const { data: raw } = await ctx.client.getJson(path, { query: qs, auth: "required" });
         const data = expectAgg(raw);
         const groups: unknown[] | null = Array.isArray(data.groups) ? data.groups : null;
         const totalGroups = typeof data.total_groups === "number" ? data.total_groups : null;
@@ -791,7 +878,7 @@ export function registerTools(server: McpServer, client: OpenFunClient, opts: { 
           group_by: data.group_by ?? args.group_by ?? null,
           field: data.field ?? args.field ?? null,
           filters: filters ?? null,
-          request: { api_url: client.publicUrl(path, qs) },
+          request: { api_url: ctx.client.publicUrl(path, qs) },
           source: sourceInfo(ctx, args.slug, detail),
         };
         if (groups) {

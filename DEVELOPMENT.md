@@ -52,15 +52,16 @@ npm run icon        # 重新產生 icon.png
 manifest.json          MCPB manifest（v0.3，user_config 只有 api_token）
 src/index.ts           stdio 進入點
 src/server.ts          McpServer 與 instructions
-src/tools.ts           9 個唯讀工具
+src/tools.ts           9 個唯讀工具；Codex 另註冊 openfun_set_token／openfun_clear_token
+src/session.ts         執行中的 Token 狀態：每次工具呼叫取一份不可變快照（client＋schema 快取），對話 Token 的驗證、取代與清除
 src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨 redirect、逾時與大小上限、錯誤分類
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
 src/schema.ts          meta.schema 解析
 src/config.ts          環境變數與開發覆寫
-src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 改為本機 setup.mjs）
+src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 改為在對話貼短效 Token）
 src/runtime.ts         啟動參數（--host=codex）與 Token 來源解析
-src/credentials.ts     Codex 用的 Token 設定檔讀寫（0700／0600）
-src/codex-setup*.ts    Codex 的 setup.mjs（互動輸入 Token、--status、--remove）
+src/credentials.ts     Codex 進階選用的 Token 設定檔讀寫（0700／0600）
+src/codex-setup*.ts    Codex 進階選用的 setup.mjs（互動輸入 Token、--status、--remove）
 codex/                 Codex plugin 靜態檔案
 scripts/validate-codex-plugin.mjs  Codex plugin 驗證
 scripts/pack-codex.mjs Codex plugin 打包（allowlist）
@@ -159,17 +160,31 @@ Codex 解析 portable `mcp.json` stdio server 的方式（`codex-rs/codex-mcp/sr
   **不包含** `XDG_CONFIG_HOME` 與 `OPENFUN_API_TOKEN`。plugin 範圍的 MCP 設定也沒有放行環境變數的欄位。
 
 實測（`test/codex.test.mjs`）：解壓到含中文與空白的路徑後執行 `codex plugin marketplace add <dir>`、
-`codex plugin add openfun-data@openfun`，Codex 把 plugin 複製到 `CODEX_HOME/plugins/cache/openfun/openfun-data/0.1.0/`；
+`codex plugin add openfun-data@openfun`，Codex 把 plugin 複製到 `CODEX_HOME/plugins/cache/openfun/openfun-data/<版本>/`；
 app-server 啟動的程序為 `node <快取>/server/index.mjs --host=codex`，cwd 與 `PLUGIN_ROOT` 都是快取路徑，
 env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.path` 為 `./`（Codex 允許 marketplace 根目錄即 plugin）。
 
 ### Token
 
+主要流程是對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
+
+- `openfun_set_token`：使用者在對話中貼出 Token 後由 Codex 呼叫。先用 `checkToken` 檢查格式，再以候選 Token 呼叫固定的
+  `GET /api/v1/me`（同一個 client：固定 base URL、不跟隨 redirect）；成功才取代，失敗保留原狀態（含 schema 快取）。
+  輸出遮蔽新舊 Token；不寫檔、不寫 log。無法從 opaque Token 判斷期限，所以不宣稱「已驗證為短效」。
+- `openfun_clear_token`：把本程序狀態設為 `cleared`；之後不改用設定檔或環境變數，也不刪除設定檔，重新啟動後依啟動規則再次載入。
+- 兩者都不是 readOnly；查詢工具仍為 readOnly。設定與清除依呼叫順序序列化執行。
+- `src/session.ts`：每次工具呼叫開始時取一份快照，header、schema 快取與輸出遮蔽都用同一個 Token；
+  Token 取代時建立新快照（新的快取），進行中的舊呼叫仍以自己的舊 Token 遮蔽。
+- 對話 Token 只在 MCP server 程序記憶體。宿主可能讓多個對話共用同一個 MCP server，所以文件不宣稱「只限這段聊天」。
+  Token 會留在 Codex 的對話與工具呼叫紀錄中，這是已告知使用者的風險。
+
+啟動時的進階來源（選用）：
+
 - 位置：POSIX `$HOME/.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
   只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
 - `setup.mjs` 只從 TTY 以 raw mode 讀取、不回顯；拒絕管線輸入與命令列參數；不連網；以 0600 暫存檔原子替換。
 - server 讀取時拒絕權限過寬（POSIX `mode & 077`）、非本人擁有、符號連結、格式錯誤或不合法的 Token。
-  Token 在啟動時讀取，所以更新後需重新啟動 Codex。
+  設定檔在啟動時讀取，所以更新後需重新啟動 Codex。
 - `OPENFUN_API_TOKEN` 有值時優先（但 Codex 預設不傳遞它）。Windows 不設定 ACL，檔案沿用使用者設定目錄的權限；不是加密儲存。
 
 ### 測試方式與限制
@@ -177,9 +192,11 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 - 所有 Codex CLI 都在子程序中以暫存 `CODEX_HOME`、`HOME` 執行，並檢查真實 `~/.codex/config.toml` 未變動。
   不送出對話 turn，不需要 API Key。
 - 透過 Codex app-server 的 `mcpServerStatus/list`、`thread/start`、`mcpServer/tool/call` 讓 Codex 自己啟動並呼叫 server；
-  只呼叫不需要網路的情境（未設定、權限過寬、Token 不合法）。
+  確認列出 11 個工具，只呼叫不需要網路的情境（未設定、權限過寬、Token 不合法、格式錯誤的 `openfun_set_token`、`openfun_clear_token`）。
 - 有合法格式 Token 時，不經 Codex 呼叫會連網的工具（避免打正式站），改從 `/proc` 讀取 Codex 實際啟動的
   argv／cwd／env，原樣重跑並只加上指向本機 mock 的 `OPENFUN_DEV_BASE_URL`。此部分只在 Linux 執行。
+- `test/chat-token.test.mjs`：對話 Token 的設定／拒絕／清除／快取／並行遮蔽，以及打包後 server 的原始 stdout／stderr 與檔案系統檢查；
+  只連本機 mock，使用假 Token。
 - `test/codex-validate.test.mjs` 另以一個案例確認 Codex 本身也拒絕載入絕對路徑的 command，與本專案驗證器一致。
 
 ## 發版與打包注意事項

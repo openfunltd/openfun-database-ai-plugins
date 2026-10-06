@@ -26,7 +26,7 @@
 ## 1. 準備
 
 1. 安裝並登入 [Claude Desktop](https://claude.ai/download)（macOS 或 Windows），建議更新到最新版。
-2. 下載安裝檔 [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb)（必要）與 [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip)（可選），完整發布頁見 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)。請直接下載這兩個檔案，不要使用 GitHub 自動產生的「Source code (zip)」。
+2. 下載安裝檔 [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-claude-extension.mcpb)（必要）與 [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.1/openfun-chat-plugin.zip)（可選），完整發布頁見 [v0.1.1 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.1)。請直接下載這兩個檔案，不要使用 GitHub 自動產生的「Source code (zip)」。
 
 ## 2. 取得歐噴 API Token
 

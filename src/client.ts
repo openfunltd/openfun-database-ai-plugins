@@ -236,7 +236,7 @@ export class OpenFunClient {
       return new OpenFunError("forbidden", "這個 Token 沒有存取此資料集的權限。", {
         status,
         apiMessage,
-        hint: "此資料集可能是非公開資料，或 Token 只限定部分資料集／分類。請改用其他資料集，或到 https://data.openfun.tw/user 確認帳號權限。",
+        hint: "此資料集可能是非公開資料，目前的帳號沒有存取權限。請改用其他資料集，或到 https://data.openfun.tw/user 確認帳號的資料集存取權限。",
       });
     }
     if (status === 404) {

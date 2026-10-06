@@ -1,6 +1,6 @@
 {
   "name": "openfun-database-ai-plugins",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "private": true,
   "description": "歐噴資料庫（data.openfun.tw）唯讀查詢：Claude Desktop 擴充套件（MCPB）、Claude 聊天指引 plugin、Codex plugin",
   "type": "module",
@@ -24,7 +24,7 @@
     "test:stdio": "node --test test/stdio.test.mjs",
     "test:package": "node --test test/package.test.mjs",
     "test:plugin": "node --test test/plugin.test.mjs",
-    "test:codex": "node --test test/credentials.test.mjs test/codex-validate.test.mjs test/codex.test.mjs",
+    "test:codex": "node --test test/credentials.test.mjs test/chat-token.test.mjs test/codex-validate.test.mjs test/codex.test.mjs",
     "icon": "node scripts/make-icon.mjs",
     "pack:claude": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs"
   },

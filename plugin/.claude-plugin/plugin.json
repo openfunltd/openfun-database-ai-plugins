@@ -1,7 +1,7 @@
 {
   "name": "openfun-data-chat",
   "displayName": "歐噴資料庫聊天指引",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "在聊天中查詢歐噴資料庫（data.openfun.tw）台灣公共資料的使用指引。本 plugin 只提供指引、不含查詢功能；需另外在 Claude Desktop「Settings > Extensions」安裝 openfun-claude-extension.mcpb 並設定歐噴 API Token 才能查詢。",
   "author": {
     "name": "OpenFun 歐噴",

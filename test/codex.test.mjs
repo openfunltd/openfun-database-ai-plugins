@@ -13,7 +13,7 @@ import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
 import { extractZip } from "./helpers/unzip.mjs";
 import { CodexAppServer, descendantProcesses } from "./helpers/codex-app-server.mjs";
-import { COMPANY_SLUG, startMockApi } from "./helpers/mock-api.mjs";
+import { COMPANY_SLUG, GOOD_TOKEN, startMockApi } from "./helpers/mock-api.mjs";
 import { validateCodexPlugin } from "../scripts/validate-codex-plugin.mjs";
 import { credentialsPath, writeCredentials } from "../build/lib/credentials.js";
 
@@ -31,7 +31,7 @@ const ALLOWLIST = [
   "setup.mjs",
   "skills/openfun-data/SKILL.md",
 ];
-const TOOLS = [
+const QUERY_TOOLS = [
   "openfun_aggregate",
   "openfun_check_config",
   "openfun_get_dataset",
@@ -42,6 +42,11 @@ const TOOLS = [
   "openfun_query_records",
   "openfun_search",
 ];
+// Codex 另有兩個對話 Token 管理工具（Claude Desktop 只有上面 9 個）
+const TOKEN_TOOLS = ["openfun_clear_token", "openfun_set_token"];
+const TOOLS = [...QUERY_TOOLS, ...TOKEN_TOOLS].sort();
+const PROMPT = "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
+const VERSION = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
 // 假 Token（mock 只接受 helpers/mock-api.mjs 的 GOOD_TOKEN；這裡另外檢查 header 內容即可）
 const FAKE1 = "ofk_" + "c3".repeat(32);
 const FAKE2 = "ofk_" + "d4".repeat(32);
@@ -111,10 +116,10 @@ test("Codex CLI：從中文／空白路徑 marketplace add 與 plugin add 到隔
   assert.equal(m.installedRoot, pluginDir);
   const p = codex(["plugin", "add", "openfun-data@openfun", "--json"]);
   assert.equal(p.pluginId, "openfun-data@openfun");
-  assert.equal(p.version, "0.1.0");
+  assert.equal(p.version, VERSION);
   cacheDir = p.installedPath;
   assert.ok(cacheDir.startsWith(codexHome + sep), `快取應在隔離 CODEX_HOME 內：${cacheDir}`);
-  assert.equal(relative(codexHome, cacheDir).split(sep).join("/"), "plugins/cache/openfun/openfun-data/0.1.0");
+  assert.equal(relative(codexHome, cacheDir).split(sep).join("/"), `plugins/cache/openfun/openfun-data/${VERSION}`);
   assert.deepEqual(walk(cacheDir).sort(), ALLOWLIST, "快取內容與 ZIP allowlist 相同");
   const config = readFileSync(join(codexHome, "config.toml"), "utf8");
   assert.match(config, /\[plugins\."openfun-data@openfun"\]\s*\nenabled = true/);
@@ -144,12 +149,14 @@ function findServerProcess(app) {
 
 const callText = (r) => r.content.map((c) => c.text).join("\n");
 
-test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，9 個工具，未設定 Token 時給 Codex 專用提示", { skip: linuxOnly }, async () => {
+test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，11 個工具，未設定時提示在對話貼短效 Token；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
   await withCodex(async ({ app, status, threadId }) => {
     assert.equal(status.pluginId, "openfun-data@openfun");
     assert.equal(status.serverInfo.name, "openfun-data");
     assert.deepEqual(Object.keys(status.tools).sort(), TOOLS);
-    for (const t of Object.values(status.tools)) assert.equal(t.annotations.readOnlyHint, true);
+    for (const [name, t] of Object.entries(status.tools)) {
+      assert.equal(t.annotations.readOnlyHint, !TOKEN_TOOLS.includes(name), `${name} readOnlyHint`);
+    }
 
     const proc = findServerProcess(app);
     const cache = realpathSync(cacheDir);
@@ -163,13 +170,30 @@ test("Codex app-server：從快取啟動 server、解析 PLUGIN_ROOT/cwd/args，
     assert.ok(!Object.keys(proc.env).some((k) => k.startsWith("OPENFUN_")), "Codex 不會傳入 OPENFUN_* 環境變數");
     assert.ok(!proc.argv.join(" ").includes(pluginDir), "執行時不使用解壓資料夾");
 
-    const r = await app.request("mcpServer/tool/call", { server: "openfun-data", threadId, tool: "openfun_check_config", arguments: {} });
+    const call = (tool, args = {}) => app.request("mcpServer/tool/call", { server: "openfun-data", threadId, tool, arguments: args });
+    const r = await call("openfun_check_config");
     assert.equal(r.isError, true);
     const t = callText(r);
-    assert.match(t, /尚未設定可用的歐噴 API Token：尚未在本機設定檔中設定 Token/);
-    assert.ok(t.includes(`node "${join(cache, "setup.mjs")}"`), `提示應包含快取內 setup.mjs 的路徑：${t}`);
-    assert.match(t, /AI 助理不要代為執行/);
-    assert.doesNotMatch(t, /Claude Desktop/);
+    assert.match(t, /尚未設定可用的歐噴 API Token：這次執行中還沒有設定 Token/);
+    assert.ok(t.includes(PROMPT), `提示應為在對話貼短效 Token：${t}`);
+    assert.match(t, /openfun_set_token/);
+    assert.doesNotMatch(t, /Claude Desktop|setup\.mjs/);
+
+    // 以下都不連網：格式錯誤在送出前就拒絕；清除只改本程序記憶體（Codex 啟動的 server 指向正式站，所以不測合法 Token）
+    const bad = "ofk_bad value with spaces 1234567890";
+    const set = await call("openfun_set_token", { token: bad });
+    assert.equal(set.isError, true);
+    assert.match(callText(set), /新 Token 未套用，目前狀態維持不變/);
+    assert.match(callText(set), /空白、換行/);
+    assert.ok(!callText(set).includes(bad), "錯誤不可回顯貼上的值");
+    const clear = await call("openfun_clear_token");
+    assert.notEqual(clear.isError, true);
+    assert.match(callText(clear), /不會改用設定檔或環境變數/);
+    const after = await call("openfun_check_config");
+    assert.equal(after.isError, true);
+    assert.match(callText(after), /已清除這次執行中的 Token/);
+    assert.ok(!app.stderr.includes(bad), "Codex app-server 的 stderr 不可含貼上的值");
+    assert.ok(!existsSync(join(userHome, ".config", "openfun-data")), "對話 Token 工具不可建立設定檔");
   });
 });
 
@@ -213,7 +237,7 @@ async function runCapturedSpec(spec, fn) {
   }
 }
 
-test("Token 設定檔：Codex 解析出的啟動方式讀到 Token；更新、移除後立即反映；Token 不出現在輸出", { skip: linuxOnly }, async () => {
+test("Token 設定檔（進階選用）與對話 Token：Codex 解析出的啟動方式；設定、清除不回退、重啟規則；Token 不出現在輸出", { skip: linuxOnly }, async () => {
   api = await startMockApi();
   const path = credentialsPath({ HOME: userHome }, "linux");
   writeCredentials(path, FAKE1, "linux");
@@ -224,6 +248,7 @@ test("Token 設定檔：Codex 解析出的啟動方式讀到 Token；更新、�
   assert.equal(spec.env.HOME, userHome);
 
   const lastAuth = () => [...api.requests].reverse().find((r) => r.path.startsWith("/api/v1/datasets"))?.headers.authorization;
+  const fileBefore = readFileSync(path, "utf8");
   await runCapturedSpec(spec, async (client, stderr) => {
     const { tools } = await client.listTools();
     assert.deepEqual(tools.map((t) => t.name).sort(), TOOLS);
@@ -232,7 +257,36 @@ test("Token 設定檔：Codex 解析出的啟動方式讀到 Token；更新、�
     assert.ok(!JSON.stringify(r).includes(FAKE1), "工具輸出不可含 Token");
     assert.match(stderr(), /宿主：Codex；來源：credentials-file/);
     assert.ok(!stderr().includes(FAKE1), "stderr 不可含 Token");
-    assert.match(client.getInstructions(), /不要在對話中索取/);
+    assert.match(client.getInstructions(), /openfun_set_token/);
+
+    // 對話設定的 Token 取代設定檔的 Token（只在本程序記憶體）
+    const set = await client.callTool({ name: "openfun_set_token", arguments: { token: GOOD_TOKEN } });
+    assert.notEqual(set.isError, true, callText(set));
+    assert.match(callText(set), /已取代先前的 Token（來源：本機設定檔/);
+    assert.ok(!JSON.stringify(set).includes(GOOD_TOKEN) && !JSON.stringify(set).includes(FAKE1));
+    assert.equal([...api.requests].reverse().find((x) => x.path === "/api/v1/me").headers.authorization, `Bearer ${GOOD_TOKEN}`);
+    const q = await client.callTool({ name: "openfun_query_records", arguments: { slug: COMPANY_SLUG } });
+    assert.equal(q.isError, undefined, callText(q));
+    assert.equal(lastAuth(), `Bearer ${GOOD_TOKEN}`);
+    assert.equal(readFileSync(path, "utf8"), fileBefore, "對話 Token 不可寫入設定檔");
+
+    // 清除：不回退到設定檔，不送出需要認證的請求，也不刪除設定檔
+    const clear = await client.callTool({ name: "openfun_clear_token", arguments: {} });
+    assert.match(callText(clear), /重新啟動 Codex 後可能再次載入/);
+    const before = api.requests.length;
+    const none = await client.callTool({ name: "openfun_query_records", arguments: { slug: COMPANY_SLUG } });
+    assert.equal(none.isError, true);
+    assert.match(callText(none), /已清除這次執行中的 Token/);
+    assert.equal(api.requests.length, before, "清除後不可改用設定檔的 Token 送出請求");
+    assert.equal(readFileSync(path, "utf8"), fileBefore, "清除不可刪除或修改設定檔");
+    assert.ok(![GOOD_TOKEN, FAKE1].some((t) => stderr().includes(t)), "stderr 不可含 Token");
+  });
+
+  // 重新啟動：既有設定檔再次載入；對話 Token 不保留
+  await runCapturedSpec(spec, async (client, stderr) => {
+    await client.callTool({ name: "openfun_query_records", arguments: { slug: COMPANY_SLUG } });
+    assert.equal(lastAuth(), `Bearer ${FAKE1}`, "重啟後再次載入既有設定檔");
+    assert.match(stderr(), /來源：credentials-file/);
   });
 
   writeCredentials(path, FAKE2, "linux");
@@ -242,13 +296,18 @@ test("Token 設定檔：Codex 解析出的啟動方式讀到 Token；更新、�
   });
 
   rmSync(path);
+  await runCapturedSpec(spec, async (client) => {
+    const set = await client.callTool({ name: "openfun_set_token", arguments: { token: GOOD_TOKEN } });
+    assert.notEqual(set.isError, true, callText(set));
+  });
+  assert.equal(existsSync(path), false, "對話 Token 不會建立設定檔");
   const before = api.requests.length;
   await runCapturedSpec(spec, async (client) => {
     const r = await client.callTool({ name: "openfun_query_records", arguments: { slug: COMPANY_SLUG } });
     assert.equal(r.isError, true);
     assert.match(callText(r), /尚未設定/);
   });
-  assert.equal(api.requests.length, before, "移除 Token 後不送出需要認證的請求");
+  assert.equal(api.requests.length, before, "重新啟動後對話 Token 已消失，不送出需要認證的請求");
 });
 
 test("解除安裝：plugin remove 刪除快取、marketplace remove；真實 ~/.codex 未被修改", { skip }, () => {

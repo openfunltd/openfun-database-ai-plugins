@@ -105,7 +105,7 @@ test("resolveRuntime：Claude 原行為不讀設定檔；Codex 環境變數優�
   const fromFile = resolveRuntime(["--host=codex"], env, "/opt/p/server/index.mjs");
   assert.equal(fromFile.config.token, TOKEN);
   assert.equal(fromFile.tokenSource, "credentials-file");
-  assert.match(fromFile.host.setupHint, /node "\/opt\/p\/setup\.mjs"/);
+  assert.match(fromFile.host.guideTokenNote, /node "\/opt\/p\/setup\.mjs"/, "setup.mjs 只作為進階選項出現在說明中");
 
   const fromEnv = resolveRuntime(["--host=codex"], { ...env, OPENFUN_API_TOKEN: TOKEN2 }, "/opt/p/server/index.mjs");
   assert.equal(fromEnv.config.token, TOKEN2);
@@ -116,14 +116,14 @@ test("resolveRuntime：Claude 原行為不讀設定檔；Codex 環境變數優�
   assert.ok(badEnv.config.tokenProblem);
 
   const withRoot = resolveRuntime(["--host=codex"], { ...env, PLUGIN_ROOT: "/cache/歐噴 p/0.1.0" }, "/ignored/server/index.mjs");
-  assert.match(withRoot.host.setupHint, /\/cache\/歐噴 p\/0\.1\.0\/setup\.mjs/);
-  assert.doesNotMatch(withRoot.host.setupHint, /Claude Desktop/);
+  assert.match(withRoot.host.guideTokenNote, /\/cache\/歐噴 p\/0\.1\.0\/setup\.mjs/);
+  assert.doesNotMatch(withRoot.host.setupHint, /Claude Desktop|setup\.mjs/, "需要 Token 時的提示是在對話中貼 Token，不是執行 setup.mjs");
 
   for (const bad of [["--host=other"], ["--host="]]) assert.throws(() => resolveRuntime(bad, env, "/x/server/index.mjs"));
   assert.equal(resolveRuntime(["extra"], env, "/x/server/index.mjs").host.kind, "claude-desktop", "其他參數照原行為忽略");
 });
 
-test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版改為本機 setup.mjs 且不提 Claude", async () => {
+test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版改為在對話貼短效 Token 且不提 Claude", async () => {
   const { notConfiguredError } = await import("../build/lib/errors.js");
   const { serverInstructions, extensionGuide, EXTENSION_GUIDE, SERVER_INSTRUCTIONS } = await import("../build/lib/tools.js");
   const { codexHost } = await import("../build/lib/host.js");
@@ -132,10 +132,27 @@ test("宿主提示：預設維持 Claude Desktop 原文字；Codex 版改為本�
   assert.match(claude.hint, /Claude Desktop「設定 > 擴充功能（Extensions）」/);
   assert.match(SERVER_INSTRUCTIONS, /Token 已在擴充套件設定中，不要在聊天中索取。$/);
   assert.match(EXTENSION_GUIDE, /Token 已由使用者在 Claude Desktop 的擴充套件設定中提供/);
+  assert.doesNotMatch(EXTENSION_GUIDE + SERVER_INSTRUCTIONS, /openfun_set_token|短效/, "Claude 的說明不提對話 Token");
   const host = codexHost("/p/setup.mjs");
   const codex = notConfiguredError(null, host);
-  assert.match(codex.hint, /node "\/p\/setup\.mjs"/);
-  for (const text of [codex.hint, serverInstructions(host), extensionGuide(host)]) assert.doesNotMatch(text, /Claude/);
+  const prompt = "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
+  for (const text of [codex.hint, host.updateHint, serverInstructions(host), extensionGuide(host)]) {
+    assert.ok(text.includes(prompt), `應包含固定提示：${text.slice(0, 80)}`);
+    assert.match(text, /openfun_set_token/);
+    assert.match(text, /不要用 shell、curl、命令列或寫檔/);
+    // 舊值（被拒絕、過期、已清除）不可從聊天紀錄自行再套用；不可有「已提供就不要再索取」的絕對規則
+    assert.match(text, /曾被拒絕、已過期或已清除的 Token，不要從聊天紀錄自行再次套用/);
+    assert.doesNotMatch(text, /已經提供過時不要再次索取|已經提供時不要重複索取/);
+    assert.doesNotMatch(text, /Claude/);
+    // 歐噴目前沒有限縮 Token 權限的功能，提示不可要求限縮；也不可宣稱固定的有效期限
+    assert.doesNotMatch(text, /限縮|最小權限|唯讀 Token|1 ?小時|一小時/);
+  }
+  assert.doesNotMatch(codex.hint, /setup\.mjs/);
+  assert.match(host.updateHint, /請不要再套用同一個 Token/);
+  assert.match(extensionGuide(host), /進階選用.*node "\/p\/setup\.mjs"/);
+  assert.match(extensionGuide(host), /重新啟動後需要重新貼上/);
+  assert.match(extensionGuide(host), /不會刪除對話紀錄，也不會撤銷 Token/);
+  assert.match(extensionGuide(host), /openfun_clear_token/);
 });
 
 // ---------- setup 程式（以模擬 TTY 測試互動流程） ----------

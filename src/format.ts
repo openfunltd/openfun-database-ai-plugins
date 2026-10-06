@@ -1,5 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { OpenFunError, formatError, redact } from "./errors.js";
+import { OpenFunError, type Secrets, formatError, redact } from "./errors.js";
 
 /**
  * 單一工具回應所有 text content 的總字元上限（遮蔽後、含 summary、來源、外部內容標記與
@@ -21,7 +21,7 @@ export function json(value: unknown): string {
 }
 
 /** 遮蔽後的總字元數 */
-export function responseSize(token: string | null, blocks: string[]): number {
+export function responseSize(token: Secrets, blocks: string[]): number {
   let n = 0;
   for (const b of blocks) if (b !== "") n += redact(b, token).length;
   return n;
@@ -39,14 +39,14 @@ export function tooLargeError(size: number, hint: string, what = "回應內容")
  * 成功回應。總大小超過上限時改丟 too_large（由工具外層轉成 isError），
  * 不會截斷 JSON。overflowHint 必須說明可行的縮小方式。
  */
-export function ok(token: string | null, blocks: string[], overflowHint: string): CallToolResult {
+export function ok(token: Secrets, blocks: string[], overflowHint: string): CallToolResult {
   const content = blocks.filter((b) => b !== "").map((b) => ({ type: "text" as const, text: redact(b, token) }));
   const size = content.reduce((n, c) => n + c.text.length, 0);
   if (size > MAX_TOOL_TEXT_CHARS) throw tooLargeError(size, overflowHint);
   return { content };
 }
 
-export function fail(err: unknown, token: string | null): CallToolResult {
+export function fail(err: unknown, token: Secrets): CallToolResult {
   return { isError: true, content: [{ type: "text", text: formatError(err, token) }] };
 }
 
