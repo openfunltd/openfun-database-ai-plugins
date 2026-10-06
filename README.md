@@ -8,7 +8,7 @@
 
 AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改任何資料。
 
-兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；獨立本機 MCP 的 Token 可直接在設定畫面輸入，也提供對話與終端機方式。
+兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；獨立本機 MCP 的 Token 可直接在設定畫面輸入，也提供對話短效 Token 方式。
 
 ## 下載安裝檔（v0.1.0 測試版）
 
@@ -28,7 +28,7 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | 安裝檔 | `openfun-claude-extension.mcpb`（必要）＋ `openfun-chat-plugin.zip`（可選指引） | `openfun-codex-plugin.zip`（本機 plugin） |
 | 安裝方式 | 雙擊或在設定畫面安裝 | 新增 GitHub 市集（也提供 ZIP） |
 | 需要 Node.js | 不需要 | 需要 18 以上 |
-| Token 設定 | 擴充套件設定畫面的欄位 | 獨立本機 MCP 的環境變數欄位；也可用對話或終端機 |
+| Token 設定 | 擴充套件設定畫面的欄位 | 獨立本機 MCP 的環境變數欄位；也可用對話 |
 | Token 存放 | 系統憑證儲存區（加密） | 畫面設定存在本機設定檔（未加密）；對話 Token 只存在記憶體 |
 | 完整說明 | [Claude Desktop 說明](docs/CLAUDE_DESKTOP.md) | [Codex plugin 說明](codex/README.md) |
 
@@ -62,7 +62,7 @@ MCP 畫面方式不用終端機或在聊天中貼 Token；本機設定未加密�
 ## Token 注意事項
 
 - Claude Desktop：只在擴充套件設定畫面輸入，由 Claude Desktop 存放在系統憑證儲存區（macOS 鑰匙圈、Windows 認證管理員）；不要貼到 Claude 聊天中。
-- Codex：MCP 畫面的環境變數存在 Codex 本機設定，未加密，請勿分享含 Token 的設定檔或截圖。`setup.mjs` 方式另存於本機設定檔（`~/.config/openfun-data/credentials.json`，Windows 為 `%APPDATA%\openfun-data\credentials.json`），未加密，以檔案權限保護；要刪除請執行 `node ~/openfun-codex-plugin/setup.mjs --remove`。
+- Codex：MCP 畫面的環境變數存在 Codex 本機設定，未加密，請勿分享含 Token 的設定檔或截圖。要移除請在 MCP 畫面刪除 `OPENFUN_API_TOKEN` 並重新啟動。
   若選擇在對話中貼 Token，Token 會留在對話紀錄中，建議使用短效 Token，Codex 重新啟動後需重貼。
 
 ## 開發狀態
@@ -77,7 +77,7 @@ MCP 畫面方式不用終端機或在聊天中貼 Token；本機設定未加密�
 |---|---|---|---|
 | `openfun-claude-extension.mcpb` | Claude Desktop | Settings > Extensions | 真正的查詢功能，含 Token 設定欄位（必要） |
 | `openfun-chat-plugin.zip` | Claude Desktop | Customize > Plugins | 只含聊天指引，不能單獨查資料（可選） |
-| `openfun-codex-plugin.zip` | Codex | 外掛程式 → 新增外掛程式／新增外掛市集 | 9 個唯讀查詢工具、Token 設定程式（setup.mjs）、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
+| `openfun-codex-plugin.zip` | Codex | 外掛程式 → 新增外掛程式／新增外掛市集 | 9 個唯讀查詢工具、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
 
 三個檔案不能互換：`.mcpb` 不能上傳到 Customize > Plugins，Claude 的 ZIP 也不能給 Codex 使用。
 

@@ -16,8 +16,8 @@ import { OpenFunError } from "./errors.js";
 import type { HostProfile } from "./host.js";
 import type { DatasetDetail } from "./schema.js";
 
-/** env／credentials-file 為啟動時載入；chat 為對話中設定；cleared 為本程序已清除（不再改用其他來源） */
-export type TokenSource = "env" | "credentials-file" | "chat" | "cleared" | "none";
+/** env 為啟動時載入；chat 為對話中設定；cleared 為本程序已清除（不再改用其他來源） */
+export type TokenSource = "env" | "chat" | "cleared" | "none";
 
 export interface TokenSnapshot {
   readonly client: OpenFunClient;
@@ -99,7 +99,7 @@ export class TokenSession {
     });
   }
 
-  /** 清除本程序的有效 Token；之後不改用設定檔或環境變數，直到再次設定或重新啟動。 */
+  /** 清除本程序的有效 Token；之後不改用環境變數，直到再次設定或重新啟動。 */
   clearToken(): Promise<{ previous: TokenSnapshot }> {
     return this.#serialize(async () => {
       const previous = this.#current;

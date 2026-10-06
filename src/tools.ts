@@ -229,7 +229,6 @@ function validateRecordsFields(
 
 const TOKEN_SOURCE_LABEL: Record<TokenSource, string> = {
   env: "環境變數 OPENFUN_API_TOKEN（啟動時載入）",
-  "credentials-file": "本機設定檔（setup.mjs 設定，啟動時載入）",
   chat: "對話中設定（只存在本機 MCP server 記憶體，重新啟動後需要重貼）",
   cleared: "已清除",
   none: "未設定",
@@ -249,7 +248,7 @@ function registerTokenTools(server: McpServer, session: TokenSession): void {
     {
       title: "設定歐噴 Token（本次執行）",
       description:
-        "選用的對話設定方式：只在使用者明確選擇在對話中設定、或主動貼出歐噴 API Token 後呼叫，把 Token 原樣放在 token 參數；不要為了呼叫本工具主動索取 Token（預設請使用者自己在終端機執行 setup.mjs）。會先檢查格式，再以固定的 GET https://data.openfun.tw/api/v1/me 驗證；驗證成功才取代目前的 Token，失敗時保留原本狀態。Token 只存在本機 MCP server 程序的記憶體（重新啟動後需要重貼），不寫檔、不顯示 Token。不要用 shell、curl、命令列或寫檔處理 Token，回覆中也不要重複 Token 的任何部分。",
+        "選用的對話設定方式：只在使用者明確選擇在對話中設定、或主動貼出歐噴 API Token 後呼叫，把 Token 原樣放在 token 參數；不要為了呼叫本工具主動索取 Token（預設請使用者自己在 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入）。會先檢查格式，再以固定的 GET https://data.openfun.tw/api/v1/me 驗證；驗證成功才取代目前的 Token，失敗時保留原本狀態。Token 只存在本機 MCP server 程序的記憶體（重新啟動後需要重貼），不寫檔、不顯示 Token。不要用 shell、curl、命令列或寫檔處理 Token，回覆中也不要重複 Token 的任何部分。",
       inputSchema: {
         token: z.string().max(4096).describe("使用者在對話中貼出的歐噴 API Token（只放 Token 本身）"),
       },
@@ -280,7 +279,7 @@ function registerTokenTools(server: McpServer, session: TokenSession): void {
     {
       title: "清除歐噴 Token（本次執行）",
       description:
-        "清除這個本機 MCP server 程序記憶體中目前有效的歐噴 Token（不論來自對話、設定檔或環境變數）。清除後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數，直到使用者再次設定或重新啟動。不會刪除設定檔、不會刪除對話紀錄，也不會撤銷 Token。",
+        "清除這個本機 MCP server 程序記憶體中目前有效的歐噴 Token（不論來自對話或環境變數）。清除後需要 Token 的查詢會回報尚未設定，不會改用環境變數，直到使用者再次設定或重新啟動。不會刪除環境變數、不會刪除對話紀錄，也不會撤銷 Token。",
       inputSchema: {},
       annotations: { title: "清除歐噴 Token（本次執行）", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
@@ -290,9 +289,9 @@ function registerTokenTools(server: McpServer, session: TokenSession): void {
         previous.client.hasToken
           ? `已清除本程序記憶體中的 Token（原來源：${TOKEN_SOURCE_LABEL[previous.source]}）。`
           : "本程序目前沒有有效的 Token；狀態已設為清除。",
-        "之後需要 Token 的查詢會回報尚未設定，不會改用設定檔或環境變數；要繼續查詢，可以在對話中重新設定，或重新啟動 Codex。",
+        "之後需要 Token 的查詢會回報尚未設定，不會改用環境變數；要繼續查詢，可以在對話中重新設定，或重新啟動 Codex。",
         "這不會刪除對話紀錄中的 Token，也不會撤銷 Token；要讓 Token 失效請到 https://data.openfun.tw/user 撤銷。",
-        "既有的本機設定檔（setup.mjs）或環境變數不會被刪除，重新啟動 Codex 後可能再次載入；要移除設定檔請自己在終端機執行 setup.mjs --remove。",
+        "MCP 設定畫面的環境變數不會被刪除，重新啟動 Codex 後可能再次載入；要移除請自行刪除 OPENFUN_API_TOKEN 項目並重新啟動。",
       ];
       return { content: [{ type: "text", text: redact(lines.join("\n"), previous.client.secretForRedaction) }] };
     },

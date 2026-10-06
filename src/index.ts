@@ -6,7 +6,7 @@ import { createServer } from "./server.js";
 async function main(): Promise<void> {
   let runtime;
   try {
-    runtime = resolveRuntime(process.argv.slice(2), process.env, process.argv[1] ?? "");
+    runtime = resolveRuntime(process.argv.slice(2), process.env);
   } catch (err) {
     process.stderr.write(`[openfun] 設定錯誤：${(err as Error).message}\n`);
     process.exit(1);

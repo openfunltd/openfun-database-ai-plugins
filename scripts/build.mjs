@@ -58,20 +58,6 @@ console.log(`build/bundle 完成：內嵌 ${pkgs.size} 個第三方套件`);
 const codexOut = join(root, "build", "codex-plugin");
 rmSync(codexOut, { recursive: true, force: true });
 mkdirSync(join(codexOut, "server"), { recursive: true });
-const setup = await build({
-  entryPoints: [join(root, "src", "codex-setup-cli.ts")],
-  outfile: join(codexOut, "setup.mjs"),
-  bundle: true,
-  platform: "node",
-  format: "esm",
-  target: "node18",
-  legalComments: "none",
-  metafile: true,
-  logLevel: "warning",
-});
-const setupThirdParty = Object.keys(setup.metafile.inputs).filter((i) => i.includes("node_modules/"));
-if (setupThirdParty.length) throw new Error(`setup.mjs 不應內嵌第三方套件：${setupThirdParty.join(", ")}`);
-
 // 檔案逐一列出；codex/ 目錄中未列出的檔案不會進入產物
 const CODEX_STATIC = [
   "plugin.json",

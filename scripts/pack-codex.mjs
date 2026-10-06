@@ -25,7 +25,6 @@ export const CODEX_PLUGIN_FILES = [
   "mcp.json",
   "plugin.json",
   "server/index.mjs",
-  "setup.mjs",
   "skills/openfun-data/SKILL.md",
 ];
 

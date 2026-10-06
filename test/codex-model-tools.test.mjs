@@ -7,12 +7,11 @@ import { spawnSync } from "node:child_process";
 import { createServer } from "node:http";
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { CodexAppServer } from "./helpers/codex-app-server.mjs";
 import { extractZip } from "./helpers/unzip.mjs";
 import { GOOD_TOKEN, INVALID_TOKEN, startMockApi } from "./helpers/mock-api.mjs";
-import { credentialsPath, writeCredentials } from "../build/lib/credentials.js";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const hasCodex = spawnSync("codex", ["--version"], { encoding: "utf8" }).status === 0;
@@ -26,7 +25,7 @@ const completed = (id) => ({
   response: { id, usage: { input_tokens: 0, output_tokens: 0, total_tokens: 0 } },
 });
 
-async function runProbe({ excluded = false, emptyAllowlist = false, standalone = false, guiToken = false } = {}) {
+async function runProbe({ excluded = false, emptyAllowlist = false, standalone = false, guiToken = false, legacyToken = false } = {}) {
   const base = mkdtempSync(join(tmpdir(), "openfun-model-tools-"));
   const userHome = join(base, "home");
   const codexHome = join(base, "codex");
@@ -41,7 +40,7 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
   const standaloneDir = join(base, "歐噴 本機 MCP");
   if (standalone) {
     mkdirSync(join(standaloneDir, "server"), { recursive: true });
-    for (const file of ["server/index.mjs", "setup.mjs", "LICENSE", "THIRD_PARTY_LICENSES.md"]) {
+    for (const file of ["server/index.mjs", "LICENSE", "THIRD_PARTY_LICENSES.md"]) {
       copyFileSync(join(pluginDir, file), join(standaloneDir, file));
     }
   }
@@ -71,10 +70,14 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
   });
   let app, timer, api;
   try {
-    if (guiToken) {
-      api = await startMockApi();
-      // 使用者先前存過無效 Token；MCP 畫面的 env Token 必須優先使用。
-      writeCredentials(credentialsPath(testEnv), INVALID_TOKEN);
+    if (guiToken || legacyToken) api = await startMockApi();
+    if (guiToken || legacyToken) {
+      // 在隔離家目錄放合法的舊 Token 檔：不應成為任何啟動時的 Token 來源。
+      const path = process.platform === "win32"
+        ? join(testEnv.APPDATA, "openfun-data", "credentials.json")
+        : join(userHome, ".config", "openfun-data", "credentials.json");
+      mkdirSync(dirname(path), { recursive: true, mode: 0o700 });
+      writeFileSync(path, JSON.stringify({ version: 1, api_token: INVALID_TOKEN }), { mode: 0o600 });
     }
     await new Promise((resolve) => model.listen(0, "127.0.0.1", resolve));
     const codeMode = excluded
@@ -84,8 +87,9 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
       ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled = false\n' +
         '[mcp_servers.openfun-local]\ncommand = "node"\n' +
         `args = ${JSON.stringify([join(standaloneDir, "server/index.mjs"), "--host=codex"])}\ncwd = ${JSON.stringify(standaloneDir)}\n` +
-        (guiToken ? '[mcp_servers.openfun-local.env]\n' +
-          `OPENFUN_API_TOKEN = ${JSON.stringify(GOOD_TOKEN)}\nOPENFUN_DEV_BASE_URL = ${JSON.stringify(api.url)}\n` : "")
+        (api ? '[mcp_servers.openfun-local.env]\n' +
+          `OPENFUN_DEV_BASE_URL = ${JSON.stringify(api.url)}\n` +
+          (guiToken ? `OPENFUN_API_TOKEN = ${JSON.stringify(GOOD_TOKEN)}\n` : "") : "")
       : emptyAllowlist
       ? '[plugins."openfun-data@openfun".mcp_servers.openfun-data]\nenabled_tools = []\n'
       : "";
@@ -129,6 +133,7 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
       assert.ok(!JSON.stringify(output.output).includes(GOOD_TOKEN), "工具回傳不得包含環境變數 Token");
       assert.ok(!app.stderr.includes(GOOD_TOKEN), "啟動診斷不得洩漏環境變數 Token");
     }
+    if (legacyToken) assert.equal(api.requests.length, 0, "未設定時不送出認證請求");
     return { mcpCount: Object.keys(mcp.tools).length, count: JSON.parse(count.text).openfunToolCount, output: output.output };
   } finally {
     clearTimeout(timer);
@@ -173,7 +178,7 @@ test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，
   assert.match(JSON.parse(call.text).content[0].text, /尚未設定可用的歐噴 API Token/);
 });
 
-test("Codex 對話：MCP 畫面環境變數 Token 可驗證，優先於舊 Token 設定檔且不回顯", { skip }, async () => {
+test("Codex 對話：MCP 畫面環境變數 Token 可驗證，不回顯且不使用舊 Token 檔", { skip }, async () => {
   const result = await runProbe({ standalone: true, guiToken: true });
   assert.equal(result.count, 11);
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
@@ -182,4 +187,15 @@ test("Codex 對話：MCP 畫面環境變數 Token 可驗證，優先於舊 Token
   assert.notEqual(config.isError, true);
   assert.match(config.content[0].text, /Token 有效，已可查詢/);
   assert.match(config.content[0].text, /環境變數/);
+});
+
+test("Codex 對話：合法舊 Token 檔存在，但 MCP 畫面沒設 Token 時回報尚未設定", { skip }, async () => {
+  const result = await runProbe({ standalone: true, legacyToken: true });
+  assert.equal(result.count, 11);
+  const call = result.output.find((item) => item.text?.startsWith('{"content":'));
+  assert.ok(call);
+  const config = JSON.parse(call.text);
+  assert.equal(config.isError, true);
+  assert.match(config.content[0].text, /這次執行中還沒有設定 Token/);
+  assert.ok(!JSON.stringify(result.output).includes(INVALID_TOKEN));
 });

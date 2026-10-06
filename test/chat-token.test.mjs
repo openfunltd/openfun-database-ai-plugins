@@ -40,7 +40,7 @@ after(async () => {
   await api.close();
 });
 
-async function connect({ token = null, host = codexHost("/p/setup.mjs"), tokenSource } = {}) {
+async function connect({ token = null, host = codexHost(), tokenSource } = {}) {
   const server = createServer({ baseUrl: api.url, token, tokenProblem: null, timeoutMs: 3000, isDevOverride: true }, { host, tokenSource });
   const [ct, st] = InMemoryTransport.createLinkedPair();
   const client = new Client({ name: "test", version: "1.0.0" });
@@ -123,7 +123,7 @@ test("缺 Token → 提示（含對話選項）→ 使用者在對話貼 Token �
 });
 
 test("上游拒絕、格式錯誤、redirect、伺服器錯誤：保留先前的 Token 與快取，不洩漏新舊 Token", async () => {
-  const { call, close } = await connect({ token: ALT_TOKEN, tokenSource: "credentials-file" });
+  const { call, close } = await connect({ token: ALT_TOKEN, tokenSource: "env" });
   try {
     await call("openfun_query_records", { slug: COMPANY_SLUG });
     const details = count(DETAIL_PATH);
@@ -181,7 +181,7 @@ test("上游拒絕、格式錯誤、redirect、伺服器錯誤：保留先前的
     assert.equal(q.isError, undefined, textOf(q));
     assert.equal(authOf(`${DETAIL_PATH}/records`), `Bearer ${ALT_TOKEN}`, "失敗後仍使用原本的 Token");
     assert.equal(count(DETAIL_PATH), details, "失敗的設定不清除原 Token 的 schema 快取");
-    assert.match(textOf(await call("openfun_check_config")), /本機設定檔/);
+    assert.match(textOf(await call("openfun_check_config")), /環境變數/);
   } finally {
     api.clearOverrides();
     await close();
@@ -209,13 +209,13 @@ test("取代 Token：schema 快取依 Token 隔離，新 Token 重新取得資�
 });
 
 test("清除：本程序不再有 Token、不改用啟動時的來源；之後可再設定", async () => {
-  const { call, close } = await connect({ token: ALT_TOKEN, tokenSource: "credentials-file" });
+  const { call, close } = await connect({ token: ALT_TOKEN, tokenSource: "env" });
   try {
     const clear = await call("openfun_clear_token");
     assert.notEqual(clear.isError, true);
     const t = textOf(clear);
-    assert.match(t, /已清除本程序記憶體中的 Token（原來源：本機設定檔/);
-    assert.match(t, /不會改用設定檔或環境變數/);
+    assert.match(t, /已清除本程序記憶體中的 Token（原來源：環境變數/);
+    assert.match(t, /不會改用環境變數/);
     assert.match(t, /不會刪除對話紀錄中的 Token，也不會撤銷 Token/);
     assert.match(t, /重新啟動 Codex 後可能再次載入/);
     assertNo(clear, ALT_TOKEN);
@@ -414,8 +414,8 @@ test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Toke
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip"]) assert.ok(docs["docs/CLAUDE_DESKTOP.md"].includes(`download/v${version}/${f}`));
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip", "openfun-codex-plugin.zip"]) assert.ok(docs["README.md"].includes(`download/v${version}/${f}`));
   assert.ok(docs["codex/README.md"].includes(`download/v${version}/openfun-codex-plugin.zip`));
-  // 安裝不用終端機；另保留 CLI 安裝與本機 Token 儲存指令。
-  const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n\s*node [^\n]*setup\.mjs"?\n/;
+  // 安裝以畫面為主；CLI 安裝與畫面環境變數／對話 Token 說明一致。
+  const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n/;
   for (const name of ["README.md", "codex/README.md"]) {
     assert.match(docs[name], /新增外掛程式/);
     assert.match(docs[name], /新增外掛市集/);
@@ -428,8 +428,9 @@ test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Toke
   assert.ok(codex.slice(optional).includes(PROMPT));
   assert.match(codex, /沒有加密/);
   assert.match(codex, /重新啟動後需要重新貼上/);
-  assert.match(codex, /setup\.mjs --remove`：刪除本機設定檔/);
-  assert.match(codex, /不會刪除設定檔或聊天紀錄，也不會撤銷 Token/);
+  assert.match(codex, /刪除 `OPENFUN_API_TOKEN` 項目並重新啟動/);
+  assert.doesNotMatch(codex + docs["README.md"], /setup\.mjs/);
+  assert.match(codex, /不會刪除環境變數或聊天紀錄，也不會撤銷 Token/);
   assert.doesNotMatch(codex + docs["README.md"], /進階/);
   assert.doesNotMatch(docs["README.md"], /都.{0,6}不要把 Token 貼到聊天|尚未支援/);
 });

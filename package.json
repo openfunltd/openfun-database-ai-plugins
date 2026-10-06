@@ -25,7 +25,7 @@
     "test:stdio": "node --test test/stdio.test.mjs",
     "test:package": "node --test test/package.test.mjs",
     "test:plugin": "node --test test/plugin.test.mjs",
-    "test:codex": "node --test test/credentials.test.mjs test/chat-token.test.mjs test/codex-validate.test.mjs test/codex.test.mjs test/codex-model-tools.test.mjs",
+    "test:codex": "node --test test/runtime.test.mjs test/chat-token.test.mjs test/codex-validate.test.mjs test/codex.test.mjs test/codex-model-tools.test.mjs",
     "icon": "node scripts/make-icon.mjs",
     "pack:claude": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs"
   },

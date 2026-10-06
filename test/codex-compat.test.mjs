@@ -160,7 +160,8 @@ test("legacy 入口：只有 .codex-plugin/plugin.json 與 .mcp.json 時，Codex
     assert.equal(r.isError, true);
     const t = callText(r);
     assert.match(t, /尚未設定可用的歐噴 API Token/);
-    assert.ok(t.includes(`node "${join(cache, "setup.mjs")}"`), `沒有 PLUGIN_ROOT 時仍指向快取中的 setup.mjs：${t}`);
+    assert.match(t, /OPENFUN_API_TOKEN/);
+    assert.doesNotMatch(t, /setup\.mjs/);
   } finally {
     await app.close();
   }

@@ -18,7 +18,7 @@
 |---|---|---|
 | `dist/openfun-claude-extension.mcpb` | `manifest.json`、`src/` | `npm run pack:mcpb` |
 | `dist/openfun-chat-plugin.zip` | `plugin/`（`.claude-plugin/plugin.json`、`skills/openfun-data/SKILL.md`、README、LICENSE） | `npm run pack:plugin` |
-| `dist/openfun-codex-plugin.zip` | `codex/`（plugin.json、mcp.json、marketplace、skill、README）＋ 打包的 `server/index.mjs`、`setup.mjs` | `npm run pack:codex` |
+| `dist/openfun-codex-plugin.zip` | `codex/`（plugin.json、mcp.json、marketplace、skill、README）＋ 打包的 `server/index.mjs` | `npm run pack:codex` |
 
 `npm run pack:claude` 產生 Claude 的 MCPB 與聊天指引，`npm run pack:codex` 產生 Codex plugin；`npm run pack` 三份都產生。companion plugin 只含 skill：官方說明 plugin 的本機 MCP server 只在 Cowork 與
 Claude Code 執行、不在 chat，所以不在 plugin.json 宣告 `mcpServers`／`userConfig`，也不把 `.mcpb` 內嵌進 ZIP。
@@ -58,10 +58,8 @@ src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
 src/schema.ts          meta.schema 解析
 src/config.ts          環境變數與開發覆寫
-src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 獨立 MCP 建議畫面環境變數，setup.mjs／對話 Token 為選用）
+src/host.ts            宿主提示文字（預設 Claude Desktop；Codex 獨立 MCP 建議畫面環境變數，對話 Token 為選用）
 src/runtime.ts         啟動參數（--host=codex）與 Token 來源解析
-src/credentials.ts     Codex 的 Token 設定檔讀寫（0700／0600）
-src/codex-setup*.ts    Codex 的 setup.mjs（互動輸入 Token、--status、--remove）
 codex/                 Codex plugin 靜態檔案
 scripts/validate-codex-plugin.mjs  Codex plugin 驗證
 scripts/pack-codex.mjs Codex plugin 打包（allowlist）
@@ -158,7 +156,7 @@ MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `ena
 這些是可重現的設定案例，**尚未確認是 Mac 桌面版回報的原因**，也不能以 Linux 測試取代 Mac 實機驗收。
 設定意義見 [OpenAI 官方設定參考](https://learn.chatgpt.com/docs/config-file/config-reference)。
 
-另外測試一條替代載入路徑：保留外掛，將其 `server/index.mjs`、`setup.mjs` 與授權檔複製到獨立資料夾，
+另外測試一條替代載入路徑：保留外掛，將其 `server/index.mjs` 與授權檔複製到獨立資料夾，
 以 `[mcp_servers.openfun-local]` 啟動同一支程式（`--host=codex`），並只停用外掛附帶的 MCP。
 實際對話仍能取得 11 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
 [官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，可用來區分外掛 MCP 與獨立 MCP 的載入差異；
@@ -194,28 +192,19 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 
 ### Token
 
-獨立本機 MCP 建議由使用者本人在設定畫面的「環境變數」輸入 `OPENFUN_API_TOKEN`，不需要終端機或聊天 Token。
-值存入 Codex 本機設定，未加密；程式啟動時優先使用此值。AI 不讀取或轉寫這個值。
-`test/codex-model-tools.test.mjs` 驗證實際 Codex 將 MCP env 傳入程式、環境變數 Token 優先於舊設定檔、
-設定檢查能成功且不回顯 Token；全部使用本機模擬 API 與假 Token。
-選用的持久方式是使用者本人執行 `node <解壓資料夾>/setup.mjs`，存一次後啟動時讀取。
-不預設在對話索取 Token；AI 不能代跑這個 TTY 程式，也不讀取或轉送 Token 檔。
-
-- 位置：POSIX 家目錄下的 `.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
-  只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
-- `setup.mjs` 只從 TTY 以 raw mode 讀取、不回顯；拒絕管線輸入與命令列參數；只檢查格式、不連網；以 0600 暫存檔原子替換。
-  Token 是否有效由重新啟動後的 `openfun_check_config`（`GET /api/v1/me`）確認。
-- server 讀取時拒絕權限過寬（POSIX `mode & 077`）、非本人擁有、符號連結、格式錯誤或不合法的 Token。
-  設定檔在啟動時讀取，所以更新後需重新啟動 Codex。
-- `OPENFUN_API_TOKEN` 有值時優先；獨立 MCP 可在設定畫面明確設定，外掛附帶 MCP 預設不傳遞它。Windows 不設定 ACL，Token 設定檔沿用使用者設定目錄的權限；不是加密儲存。
+獨立本機 MCP 由使用者本人在設定畫面的「環境變數」輸入 `OPENFUN_API_TOKEN`，不需要終端機或聊天 Token。
+值存入 Codex 本機設定，未加密；程式啟動時只讀取此環境變數，AI 不讀取或轉寫這個值。
+沒有環境變數時回報尚未設定，不讀取 `credentials.json`；安裝包不含舊 Token 設定程式。
+`test/runtime.test.mjs` 及實際 Codex 對話測試驗證：即使保留合法舊 Token 檔也不載入，
+MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄、本機模擬 API 與假 Token。
 
 選用的對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
 
 - `openfun_set_token`：使用者明確選擇對話方式或主動貼出 Token 時由 Codex 呼叫。先用 `checkToken` 檢查格式，再以候選 Token 呼叫固定的
   `GET /api/v1/me`（同一個 client：固定 base URL、不跟隨 redirect）；成功才取代，失敗保留原狀態（含 schema 快取）。
   輸出遮蔽新舊 Token；不寫檔、不寫 log。無法從 opaque Token 判斷期限，所以不宣稱「已驗證為短效」。
-- `openfun_clear_token`：把本程序狀態設為 `cleared`；之後不改用設定檔或環境變數，也不刪除設定檔，重新啟動後依啟動規則再次載入。
-  刪除設定檔只能由使用者執行 `setup.mjs --remove`。
+- `openfun_clear_token`：把本程序狀態設為 `cleared`；之後不改用環境變數；不刪除 Codex MCP 設定，重新啟動後可再次載入環境變數。
+  持久設定由使用者本人在 MCP 畫面刪除 `OPENFUN_API_TOKEN`，並重新啟動。
 - 兩者都不是 readOnly；查詢工具仍為 readOnly。設定與清除依呼叫順序序列化執行。
 - `src/session.ts`：每次工具呼叫開始時取一份快照，header、schema 快取與輸出遮蔽都用同一個 Token；
   Token 取代時建立新快照（新的快取），進行中的舊呼叫仍以自己的舊 Token 遮蔽。
