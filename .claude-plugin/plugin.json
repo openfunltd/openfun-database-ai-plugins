@@ -1,7 +1,7 @@
 {
   "name": "openfun-data",
   "version": "0.1.0",
-  "description": "以唯讀工具查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：搜尋資料集、讀取 schema 與使用指引、查詢記錄與統計。本機 stdio MCP server，需要 Node.js 18 以上。可在桌面版上傳 ZIP 或新增本機市集安裝。Token 可由使用者在終端機執行 setup.mjs 存到本機設定檔（未加密，以檔案權限保護），之後重新啟動不用重貼；也可選擇在對話中使用短效 Token（只存在記憶體，重新啟動後需重貼）。",
+  "description": "以唯讀工具查詢歐噴資料庫（data.openfun.tw）的台灣公共資料：搜尋資料集、讀取 schema 與使用指引、查詢記錄與統計。本機 stdio MCP server，需要 Node.js 18 以上。可在桌面版上傳 ZIP 或新增本機市集安裝。Token 可由使用者在獨立本機 MCP 設定畫面的 OPENFUN_API_TOKEN 環境變數輸入（存在 Codex 本機設定，未加密），重新啟動不用重貼；也可選擇在對話中使用短效 Token（只存在記憶體，重新啟動後需重貼）。",
   "author": {
     "name": "OpenFun 歐噴",
     "url": "https://data.openfun.tw"

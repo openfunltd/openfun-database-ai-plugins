@@ -2984,7 +2984,7 @@ var require_compile = __commonJS({
       const schOrFunc = root.refs[ref];
       if (schOrFunc)
         return schOrFunc;
-      let _sch = resolve2.call(this, root, ref);
+      let _sch = resolve.call(this, root, ref);
       if (_sch === void 0) {
         const schema = (_a3 = root.localRefs) === null || _a3 === void 0 ? void 0 : _a3[ref];
         const { schemaId } = this.opts;
@@ -3011,7 +3011,7 @@ var require_compile = __commonJS({
     function sameSchemaEnv(s1, s2) {
       return s1.schema === s2.schema && s1.root === s2.root && s1.baseId === s2.baseId;
     }
-    function resolve2(root, ref) {
+    function resolve(root, ref) {
       let sch;
       while (typeof (sch = this.refs[ref]) == "string")
         ref = sch;
@@ -3841,7 +3841,7 @@ var require_fast_uri = __commonJS({
       }
       return uri;
     }
-    function resolve2(baseURI, relativeURI, options) {
+    function resolve(baseURI, relativeURI, options) {
       const schemelessOptions = options ? Object.assign({ scheme: "null" }, options) : { scheme: "null" };
       const {
         parsed: baseParsed,
@@ -4210,7 +4210,7 @@ var require_fast_uri = __commonJS({
     var fastUri = {
       SCHEMES,
       normalize,
-      resolve: resolve2,
+      resolve,
       resolveComponent,
       equal,
       serialize,
@@ -12228,7 +12228,7 @@ var recursive = /* @__PURE__ */ new WeakMap();
 var NONE = 0;
 var ASSUMED = 1;
 var PROVEN = 2;
-function isRecursive(inst, stack, resolve2) {
+function isRecursive(inst, stack, resolve) {
   const cached2 = recursive.get(inst);
   if (cached2 !== void 0)
     return cached2 ? PROVEN : NONE;
@@ -12238,7 +12238,7 @@ function isRecursive(inst, stack, resolve2) {
   let result = NONE;
   const check2 = (child) => {
     if (result !== PROVEN && child?._zod) {
-      const answer = isRecursive(child, stack, resolve2);
+      const answer = isRecursive(child, stack, resolve);
       if (answer > result)
         result = answer;
     }
@@ -12249,7 +12249,7 @@ function isRecursive(inst, stack, resolve2) {
       const desc = Object.getOwnPropertyDescriptor(sh, key);
       if (spread && !desc.enumerable)
         continue;
-      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve2) : NONE;
+      const child = desc.get ? ASSUMED : desc.value?._zod ? isRecursive(desc.value, stack, resolve) : NONE;
       if (child > answer)
         answer = child;
     }
@@ -12313,7 +12313,7 @@ function isRecursive(inst, stack, resolve2) {
       break;
     // `$ZodLazy` caches its inner on the def, so a resolved edge is followed exactly
     case "lazy": {
-      const inner = def._cachedInner ?? (resolve2 ? inst._zod.innerType : void 0);
+      const inner = def._cachedInner ?? (resolve ? inst._zod.innerType : void 0);
       merge2(inner ? isRecursive(inner, stack, false) : ASSUMED);
       break;
     }
@@ -28494,19 +28494,16 @@ var StdioServerTransport = class {
     this.onclose?.();
   }
   send(message) {
-    return new Promise((resolve2) => {
+    return new Promise((resolve) => {
       const json3 = serializeMessage(message);
       if (this._stdout.write(json3)) {
-        resolve2();
+        resolve();
       } else {
-        this._stdout.once("drain", resolve2);
+        this._stdout.once("drain", resolve);
       }
     });
   }
 };
-
-// src/runtime.ts
-import { dirname as dirname2, isAbsolute, join as join2, resolve } from "node:path";
 
 // src/config.ts
 var PRODUCTION_BASE_URL = "https://data.openfun.tw";
@@ -28563,52 +28560,6 @@ function loadConfig(env = process.env) {
   return { baseUrl, token, tokenProblem: problem, timeoutMs, isDevOverride };
 }
 
-// src/credentials.ts
-import { closeSync, fsyncSync, lstatSync, mkdirSync, openSync, readFileSync, renameSync, chmodSync, unlinkSync, writeSync } from "node:fs";
-import { homedir } from "node:os";
-import { dirname, join } from "node:path";
-var CREDENTIALS_DIR_NAME = "openfun-data";
-var CREDENTIALS_FILE_NAME = "credentials.json";
-var MAX_FILE_BYTES = 4096;
-function credentialsPath(env = process.env, platform = process.platform) {
-  if (platform === "win32") {
-    const base = env.APPDATA || join(env.USERPROFILE || homedir(), "AppData", "Roaming");
-    return join(base, CREDENTIALS_DIR_NAME, CREDENTIALS_FILE_NAME);
-  }
-  return join(env.HOME || homedir(), ".config", CREDENTIALS_DIR_NAME, CREDENTIALS_FILE_NAME);
-}
-var isPosix = (platform) => platform !== "win32";
-function readCredentials(path, platform = process.platform) {
-  let st;
-  try {
-    st = lstatSync(path);
-  } catch (err) {
-    if (err.code === "ENOENT") return { token: null, problem: null, exists: false };
-    return { token: null, problem: "\u7121\u6CD5\u8B80\u53D6 Token \u8A2D\u5B9A\u6A94\uFF0C\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  }
-  if (!st.isFile()) return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u4E0D\u662F\u4E00\u822C\u6A94\u6848\uFF08\u53EF\u80FD\u662F\u7B26\u865F\u9023\u7D50\uFF09\uFF0C\u5DF2\u62D2\u7D55\u4F7F\u7528\uFF1B\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  if (isPosix(platform)) {
-    if ((st.mode & 63) !== 0) {
-      return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u6B0A\u9650\u904E\u5BEC\uFF08\u5176\u4ED6\u4F7F\u7528\u8005\u53EF\u8B80\uFF09\uFF0C\u5DF2\u62D2\u7D55\u4F7F\u7528\uFF1B\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u4FEE\u6B63\u3002", exists: true };
-    }
-    if (typeof process.getuid === "function" && st.uid !== process.getuid()) {
-      return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u4E0D\u5C6C\u65BC\u76EE\u524D\u7684\u4F7F\u7528\u8005\uFF0C\u5DF2\u62D2\u7D55\u4F7F\u7528\uFF1B\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-    }
-  }
-  if (st.size > MAX_FILE_BYTES) return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u683C\u5F0F\u7570\u5E38\uFF0C\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  let data;
-  try {
-    data = JSON.parse(readFileSync(path, "utf8"));
-  } catch {
-    return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u683C\u5F0F\u7570\u5E38\uFF0C\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  }
-  const raw = data && typeof data === "object" && !Array.isArray(data) ? data.api_token : void 0;
-  if (typeof raw !== "string") return { token: null, problem: "Token \u8A2D\u5B9A\u6A94\u683C\u5F0F\u7570\u5E38\uFF0C\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  const checked = checkToken(raw);
-  if (!checked.token) return { token: null, problem: checked.problem ?? "Token \u8A2D\u5B9A\u6A94\u4E2D\u6C92\u6709 Token\uFF0C\u8ACB\u91CD\u65B0\u57F7\u884C\u8A2D\u5B9A\u7A0B\u5F0F\u3002", exists: true };
-  return { token: checked.token, problem: null, exists: true };
-}
-
 // src/host.ts
 var CLAUDE_DESKTOP_HOST = {
   kind: "claude-desktop",
@@ -28620,30 +28571,25 @@ var CLAUDE_DESKTOP_HOST = {
   instructionsTokenNote: "Token \u5DF2\u5728\u64F4\u5145\u5957\u4EF6\u8A2D\u5B9A\u4E2D\uFF0C\u4E0D\u8981\u5728\u804A\u5929\u4E2D\u7D22\u53D6\u3002"
 };
 var CODEX_CHAT_TOKEN_PROMPT = "\u8ACB\u5230\u6B50\u5674\u5EFA\u7ACB\u77ED\u6548 Token\uFF0C\u518D\u8CBC\u5230\u9019\u500B\u5C0D\u8A71\u3002Token \u6703\u7559\u5728\u5C0D\u8A71\u8207\u5DE5\u5177\u547C\u53EB\u7D00\u9304\u4E2D\uFF1B\u4E0D\u8981\u5206\u4EAB\u6B64\u5C0D\u8A71\uFF0C\u7528\u5B8C\u53EF\u5230\u6B50\u5674\u64A4\u92B7\u3002";
-var TOKEN_PAGE_NOTE = `\u5EFA\u7ACB\u8207\u64A4\u92B7 Token\uFF1A${TOKEN_PAGE_URL}\uFF08\u4E00\u822C API Token\uFF0C\u4E0D\u662F Frontend Token\uFF09\u3002`;
 var CODEX_MCP_TOKEN_HINT = "\u5728 Codex\u300C\u8A2D\u5B9A \u2192 MCP \u4F3A\u670D\u5668\u300D\u7DE8\u8F2F\u7368\u7ACB\u672C\u6A5F\u6B50\u5674\u4F3A\u670D\u5668\uFF08\u4F8B\u5982 openfun-local\uFF09\uFF0C\u5728\u300C\u74B0\u5883\u8B8A\u6578\u300D\u65B0\u589E\u91D1\u9470 OPENFUN_API_TOKEN\uFF0C\u503C\u8CBC\u4E0A Token\uFF1B\u300C\u74B0\u5883\u8B8A\u6578\u900F\u50B3\u300D\u7559\u7A7A\uFF0C\u5132\u5B58\u5F8C\u91CD\u65B0\u555F\u52D5 Codex\u3002";
-function codexAssistantRule(setupCommand) {
-  return `\u9810\u8A2D\u8ACB\u4F7F\u7528\u8005\u672C\u4EBA${CODEX_MCP_TOKEN_HINT}\u9019\u500B\u503C\u6703\u5B58\u5165 Codex \u672C\u6A5F\u8A2D\u5B9A\uFF0C\u672A\u52A0\u5BC6\uFF0C\u8ACB\u52FF\u5206\u4EAB\u542B\u6709 Token \u7684\u8A2D\u5B9A\u6A94\u6216\u622A\u5716\u3002\u82E5\u6C92\u6709\u53EF\u7DE8\u8F2F\u7684\u7368\u7ACB MCP\uFF0C\u4F7F\u7528\u8005\u4E5F\u53EF\u5728\u81EA\u5DF1\u7684\u7D42\u7AEF\u6A5F\u57F7\u884C ${setupCommand}\uFF0C\u4F9D\u63D0\u793A\u8CBC\u4E0A Token \u5B58\u5230\u672C\u6A5F\u8A2D\u5B9A\u6A94\uFF0C\u518D\u91CD\u65B0\u555F\u52D5 Codex\u3002\u4F60\u4E0D\u80FD\u4EE3\u70BA\u57F7\u884C setup.mjs\uFF08\u5B83\u53EA\u63A5\u53D7\u7D42\u7AEF\u6A5F\u8F38\u5165\uFF09\uFF0C\u4E0D\u8981\u4E3B\u52D5\u8ACB\u4F7F\u7528\u8005\u628A Token \u8CBC\u5230\u5C0D\u8A71\uFF0C\u76EE\u524D\u5DF2\u6709\u53EF\u7528\u7684 Token \u6642\u4E5F\u4E0D\u8981\u518D\u7D22\u53D6\u3002\u4E0D\u8981\u8B80\u53D6\u3001\u986F\u793A\u6216\u641C\u5C0B Token \u8A2D\u5B9A\u6A94\u6216 MCP \u74B0\u5883\u8B8A\u6578\u7684 Token \u503C\uFF1B\u4E0D\u8981\u4EE3\u70BA\u7528 shell\u3001curl\u3001\u547D\u4EE4\u5217\u53C3\u6578\u3001\u74B0\u5883\u8B8A\u6578\u6216\u5BEB\u6A94\u8655\u7406\u6216\u8F49\u9001 Token\uFF0C\u4E5F\u4E0D\u8981\u5728\u56DE\u8986\u4E2D\u91CD\u8907 Token \u7684\u5168\u90E8\u6216\u4EFB\u4F55\u4E00\u90E8\u5206\u3002\u4F7F\u7528\u8005\u660E\u78BA\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u8A2D\u5B9A\uFF0C\u6216\u4E3B\u52D5\u8CBC\u51FA\u9084\u6C92\u8A2D\u5B9A\u904E\u7684 Token \u6642\uFF0C\u624D\u7528 openfun_set_token \u8A2D\u5B9A\uFF08\u8ACB\u6C42\u6642\u8AAA\uFF1A\u300C${CODEX_CHAT_TOKEN_PROMPT}\u300D\uFF09\uFF1B\u9019\u7A2E Token \u53EA\u5B58\u5728\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\uFF0CCodex \u91CD\u65B0\u555F\u52D5\u5F8C\u9700\u8981\u91CD\u8CBC\u3002\u66FE\u88AB\u62D2\u7D55\u3001\u5DF2\u904E\u671F\u6216\u5DF2\u6E05\u9664\u7684 Token\uFF0C\u4E0D\u8981\u5F9E\u804A\u5929\u7D00\u9304\u81EA\u884C\u518D\u6B21\u5957\u7528\uFF08\u9664\u975E\u4F7F\u7528\u8005\u660E\u78BA\u8981\u6C42\u91CD\u65B0\u4F7F\u7528\uFF09\u3002`;
+function codexAssistantRule() {
+  return `\u9810\u8A2D\u8ACB\u4F7F\u7528\u8005\u672C\u4EBA${CODEX_MCP_TOKEN_HINT}\u9019\u500B\u503C\u6703\u5B58\u5165 Codex \u672C\u6A5F\u8A2D\u5B9A\uFF0C\u672A\u52A0\u5BC6\uFF0C\u8ACB\u52FF\u5206\u4EAB\u542B\u6709 Token \u7684\u8A2D\u5B9A\u6A94\u6216\u622A\u5716\u3002\u4E0D\u8981\u4E3B\u52D5\u8ACB\u4F7F\u7528\u8005\u628A Token \u8CBC\u5230\u5C0D\u8A71\uFF0C\u76EE\u524D\u5DF2\u6709\u53EF\u7528\u7684 Token \u6642\u4E5F\u4E0D\u8981\u518D\u7D22\u53D6\u3002\u4E0D\u8981\u8B80\u53D6\u3001\u986F\u793A\u6216\u641C\u5C0B Token \u8A2D\u5B9A\u6A94\u6216 MCP \u74B0\u5883\u8B8A\u6578\u7684 Token \u503C\uFF1B\u4E0D\u8981\u4EE3\u70BA\u7528 shell\u3001curl\u3001\u547D\u4EE4\u5217\u53C3\u6578\u3001\u74B0\u5883\u8B8A\u6578\u6216\u5BEB\u6A94\u8655\u7406\u6216\u8F49\u9001 Token\uFF0C\u4E5F\u4E0D\u8981\u5728\u56DE\u8986\u4E2D\u91CD\u8907 Token \u7684\u5168\u90E8\u6216\u4EFB\u4F55\u4E00\u90E8\u5206\u3002\u4F7F\u7528\u8005\u660E\u78BA\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u8A2D\u5B9A\uFF0C\u6216\u4E3B\u52D5\u8CBC\u51FA\u9084\u6C92\u8A2D\u5B9A\u904E\u7684 Token \u6642\uFF0C\u624D\u7528 openfun_set_token \u8A2D\u5B9A\uFF08\u8ACB\u6C42\u6642\u8AAA\uFF1A\u300C${CODEX_CHAT_TOKEN_PROMPT}\u300D\uFF09\uFF1B\u9019\u7A2E Token \u53EA\u5B58\u5728\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\uFF0CCodex \u91CD\u65B0\u555F\u52D5\u5F8C\u9700\u8981\u91CD\u8CBC\u3002\u66FE\u88AB\u62D2\u7D55\u3001\u5DF2\u904E\u671F\u6216\u5DF2\u6E05\u9664\u7684 Token\uFF0C\u4E0D\u8981\u5F9E\u804A\u5929\u7D00\u9304\u81EA\u884C\u518D\u6B21\u5957\u7528\uFF08\u9664\u975E\u4F7F\u7528\u8005\u660E\u78BA\u8981\u6C42\u91CD\u65B0\u4F7F\u7528\uFF09\u3002`;
 }
-function codexHost(setupScriptPath) {
-  const setupCommand = `node "${setupScriptPath}"`;
-  const rule = codexAssistantRule(setupCommand);
+function codexHost() {
+  const rule = codexAssistantRule();
   return {
     kind: "codex",
-    setupHint: `\u8ACB\u5230 ${TOKEN_PAGE_URL} \u5EFA\u7ACB\u4E00\u822C API Token\uFF0C${CODEX_MCP_TOKEN_HINT}\u4E5F\u53EF\u4F7F\u7528 ${setupCommand} \u5B58\u5230\u672C\u6A5F\uFF0C\u6216\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u4F7F\u7528\u77ED\u6548 Token\u3002\uFF08\u7D66 AI \u52A9\u7406\uFF1A${rule}\uFF09`,
-    updateHint: `\u9019\u500B Token \u4E0D\u80FD\u7528\u4E86\uFF0C\u8ACB\u4E0D\u8981\u518D\u5957\u7528\u540C\u4E00\u500B Token\u3002\u8ACB\u5230 ${TOKEN_PAGE_URL} \u5EFA\u7ACB\u65B0\u7684\u4E00\u822C API Token\uFF0C${CODEX_MCP_TOKEN_HINT}\u82E5\u539F\u672C\u4F7F\u7528 setup.mjs\uFF0C\u5247\u5728\u81EA\u5DF1\u7684\u7D42\u7AEF\u6A5F\u57F7\u884C ${setupCommand} \u66F4\u65B0\u3002MCP \u74B0\u5883\u8B8A\u6578\u7684\u503C\u512A\u5148\u65BC\u672C\u6A5F Token \u8A2D\u5B9A\u6A94\uFF1B\u4E5F\u53EF\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u4F7F\u7528\u65B0\u7684\u77ED\u6548 Token\u3002\uFF08\u7D66 AI \u52A9\u7406\uFF1A${rule}\uFF09`,
+    setupHint: `\u8ACB\u5230 ${TOKEN_PAGE_URL} \u5EFA\u7ACB\u4E00\u822C API Token\uFF0C${CODEX_MCP_TOKEN_HINT}\u4E5F\u53EF\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u4F7F\u7528\u77ED\u6548 Token\u3002\uFF08\u7D66 AI \u52A9\u7406\uFF1A${rule}\uFF09`,
+    updateHint: `\u9019\u500B Token \u4E0D\u80FD\u7528\u4E86\uFF0C\u8ACB\u4E0D\u8981\u518D\u5957\u7528\u540C\u4E00\u500B Token\u3002\u8ACB\u5230 ${TOKEN_PAGE_URL} \u5EFA\u7ACB\u65B0\u7684\u4E00\u822C API Token\uFF0C${CODEX_MCP_TOKEN_HINT}\u4E5F\u53EF\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u4F7F\u7528\u65B0\u7684\u77ED\u6548 Token\u3002\uFF08\u7D66 AI \u52A9\u7406\uFF1A${rule}\uFF09`,
     emptyReason: "\u9019\u6B21\u57F7\u884C\u4E2D\u9084\u6C92\u6709\u8A2D\u5B9A Token\u3002",
     guideTokenNote: `\u9019\u500B Codex plugin \u7684\u67E5\u8A62\u5DE5\u5177\u90FD\u662F\u552F\u8B80\u3002\u7368\u7ACB\u672C\u6A5F MCP \u5EFA\u8B70\u7531\u4F7F\u7528\u8005\u672C\u4EBA\u5728\u8A2D\u5B9A\u756B\u9762\u7684 OPENFUN_API_TOKEN \u74B0\u5883\u8B8A\u6578\u8F38\u5165 Token\u3002
 Token \u5B58\u5728 Codex \u672C\u6A5F\u8A2D\u5B9A\uFF0C\u672A\u52A0\u5BC6\uFF1B\u5B58\u4E00\u6B21\u5373\u53EF\uFF0C\u76F4\u5230 Token \u904E\u671F\u3001\u64A4\u92B7\u6216\u88AB\u79FB\u9664\u624D\u9700\u8981\u66F4\u65B0\u3002
 \u9700\u8981 Token \u6642\uFF08\u5DE5\u5177\u56DE\u5831\u5C1A\u672A\u8A2D\u5B9A\u6216 Token \u5931\u6548\uFF09\uFF0C\u8ACB\u4F7F\u7528\u8005\u5230 ${TOKEN_PAGE_URL} \u5EFA\u7ACB\u4E00\u822C API Token\uFF08\u4E0D\u662F Frontend Token\uFF09\uFF0C
 ${CODEX_MCP_TOKEN_HINT}\u91CD\u65B0\u555F\u52D5\u5F8C\u7528 openfun_check_config \u5411\u6B50\u5674\u78BA\u8A8D\u662F\u5426\u6709\u6548\u3002
-\u9078\u7528\uFF1A\u4F7F\u7528\u8005\u672C\u4EBA\u5728\u81EA\u5DF1\u7684\u7D42\u7AEF\u6A5F\u57F7\u884C ${setupCommand} \u5B58\u5230\u672C\u6A5F Token \u8A2D\u5B9A\u6A94\uFF08\u672A\u52A0\u5BC6\uFF0C\u4EE5\u6A94\u6848\u6B0A\u9650\u4FDD\u8B77\uFF09\uFF1Bsetup.mjs \u53EA\u6AA2\u67E5\u683C\u5F0F\u3001\u4E0D\u9023\u7DB2\u3002
-\u555F\u52D5\u6642\u74B0\u5883\u8B8A\u6578\u7684 Token \u512A\u5148\u65BC\u672C\u6A5F Token \u8A2D\u5B9A\u6A94\uFF1B\u82E5\u4F7F\u7528\u74B0\u5883\u8B8A\u6578\uFF0C\u8ACB\u5728 MCP \u756B\u9762\u66F4\u65B0\u8A72\u503C\u3002
 ${rule}
 \u5C0D\u8A71\u8A2D\u5B9A\u7684 Token \u5728\u540C\u4E00\u500B Codex \u57F7\u884C\u4E2D\u7684\u5176\u4ED6\u5C0D\u8A71\u4E5F\u53EF\u80FD\u5171\u7528\u3002
-openfun_clear_token \u53EA\u6E05\u9664\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D\u7684 Token\uFF0C\u4E0D\u6703\u522A\u9664\u74B0\u5883\u8B8A\u6578\u3001\u672C\u6A5F\u8A2D\u5B9A\u6A94\u6216\u5C0D\u8A71\u7D00\u9304\uFF0C\u4E5F\u4E0D\u6703\u64A4\u92B7 Token\uFF1B\u91CD\u65B0\u555F\u52D5 Codex \u5F8C\u53EF\u80FD\u518D\u6B21\u8F09\u5165\u3002
-\u8981\u79FB\u9664\u756B\u9762\u8A2D\u5B9A\uFF0C\u8ACB\u4F7F\u7528\u8005\u672C\u4EBA\u522A\u9664 MCP \u7684 OPENFUN_API_TOKEN \u9805\u76EE\uFF1B\u8981\u522A\u9664\u672C\u6A5F Token \u8A2D\u5B9A\u6A94\uFF0C\u8ACB\u4F7F\u7528\u8005\u81EA\u5DF1\u57F7\u884C ${setupCommand} --remove\u3002
-\u53EA\u522A\u9664\u5176\u4E2D\u4E00\u8655\uFF0C\u91CD\u65B0\u555F\u52D5\u5F8C\u4ECD\u53EF\u80FD\u5F9E\u53E6\u4E00\u8655\u8F09\u5165 Token\u3002
+openfun_clear_token \u53EA\u6E05\u9664\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D\u7684 Token\uFF0C\u4E0D\u6703\u522A\u9664\u74B0\u5883\u8B8A\u6578\u6216\u5C0D\u8A71\u7D00\u9304\uFF0C\u4E5F\u4E0D\u6703\u64A4\u92B7 Token\uFF1B\u91CD\u65B0\u555F\u52D5 Codex \u5F8C\u53EF\u80FD\u518D\u6B21\u8F09\u5165\u74B0\u5883\u8B8A\u6578\u3002
+\u8981\u79FB\u9664\u756B\u9762\u8A2D\u5B9A\uFF0C\u8ACB\u4F7F\u7528\u8005\u672C\u4EBA\u522A\u9664 MCP \u7684 OPENFUN_API_TOKEN \u9805\u76EE\uFF0C\u4E26\u91CD\u65B0\u555F\u52D5 Codex\u3002
 \u7121\u6CD5\u5F9E Token \u5224\u65B7\u6709\u6548\u671F\u9650\uFF0C\u4E0D\u8981\u5BA3\u7A31\u5DF2\u78BA\u8A8D\u5B83\u662F\u77ED\u6548 Token\u3002
 \u4E0D\u8981\u4F7F\u7528 Device Authorization \u6D41\u7A0B\u3002`,
     instructionsTokenNote: `\u9700\u8981 Token \u6642\uFF1A${rule}\u7121\u6CD5\u5F9E Token \u5224\u65B7\u6709\u6548\u671F\u9650\u3002`
@@ -28651,7 +28597,7 @@ openfun_clear_token \u53EA\u6E05\u9664\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D
 }
 
 // src/runtime.ts
-function resolveRuntime(argv, env, scriptPath) {
+function resolveRuntime(argv, env) {
   let hostKind = "claude-desktop";
   for (const arg of argv) {
     const m = arg.match(/^--host=(.*)$/);
@@ -28659,18 +28605,10 @@ function resolveRuntime(argv, env, scriptPath) {
   }
   if (hostKind !== "claude-desktop" && hostKind !== "codex") throw new Error(`\u4E0D\u652F\u63F4\u7684 --host\uFF1A${hostKind.slice(0, 40)}`);
   const config2 = loadConfig(env);
-  const hasEnvToken = typeof env.OPENFUN_API_TOKEN === "string" && env.OPENFUN_API_TOKEN.trim() !== "";
-  if (hostKind === "claude-desktop") {
-    return { config: config2, host: CLAUDE_DESKTOP_HOST, tokenSource: config2.token ? "env" : "none" };
-  }
-  const root = env.PLUGIN_ROOT && isAbsolute(env.PLUGIN_ROOT) ? env.PLUGIN_ROOT : resolve(dirname2(scriptPath), "..");
-  const host = codexHost(join2(root, "setup.mjs"));
-  if (hasEnvToken) return { config: config2, host, tokenSource: config2.token ? "env" : "none" };
-  const file2 = readCredentials(credentialsPath(env));
   return {
-    config: { ...config2, token: file2.token, tokenProblem: file2.problem },
-    host,
-    tokenSource: file2.token ? "credentials-file" : "none"
+    config: config2,
+    host: hostKind === "codex" ? codexHost() : CLAUDE_DESKTOP_HOST,
+    tokenSource: config2.token ? "env" : "none"
   };
 }
 
@@ -34648,7 +34586,7 @@ var Protocol = class {
           return;
         }
         const pollInterval = task2.pollInterval ?? this._options?.defaultTaskPollInterval ?? 1e3;
-        await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+        await new Promise((resolve) => setTimeout(resolve, pollInterval));
         options?.signal?.throwIfAborted();
       }
     } catch (error62) {
@@ -34665,7 +34603,7 @@ var Protocol = class {
    */
   request(request, resultSchema, options) {
     const { relatedRequestId, resumptionToken, onresumptiontoken, task, relatedTask } = options ?? {};
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve, reject) => {
       const earlyReject = (error62) => {
         reject(error62);
       };
@@ -34743,7 +34681,7 @@ var Protocol = class {
           if (!parseResult.success) {
             reject(parseResult.error);
           } else {
-            resolve2(parseResult.data);
+            resolve(parseResult.data);
           }
         } catch (error62) {
           reject(error62);
@@ -35005,12 +34943,12 @@ var Protocol = class {
       }
     } catch {
     }
-    return new Promise((resolve2, reject) => {
+    return new Promise((resolve, reject) => {
       if (signal.aborted) {
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
         return;
       }
-      const timeoutId = setTimeout(resolve2, interval);
+      const timeoutId = setTimeout(resolve, interval);
       signal.addEventListener("abort", () => {
         clearTimeout(timeoutId);
         reject(new McpError(ErrorCode.InvalidRequest, "Request cancelled"));
@@ -36141,7 +36079,7 @@ var McpServer = class {
     let task = createTaskResult.task;
     const pollInterval = task.pollInterval ?? 5e3;
     while (task.status !== "completed" && task.status !== "failed" && task.status !== "cancelled") {
-      await new Promise((resolve2) => setTimeout(resolve2, pollInterval));
+      await new Promise((resolve) => setTimeout(resolve, pollInterval));
       const updatedTask = await extra.taskStore.getTask(taskId);
       if (!updatedTask) {
         throw new McpError(ErrorCode.InternalError, `Task ${taskId} not found during polling`);
@@ -37215,7 +37153,7 @@ var TokenSession = class {
       return { displayName: me.display_name, email: me.email, previous };
     });
   }
-  /** 清除本程序的有效 Token；之後不改用設定檔或環境變數，直到再次設定或重新啟動。 */
+  /** 清除本程序的有效 Token；之後不改用環境變數，直到再次設定或重新啟動。 */
   clearToken() {
     return this.#serialize(async () => {
       const previous = this.#current;
@@ -37691,7 +37629,6 @@ function validateRecordsFields(idx, args, warnings) {
 }
 var TOKEN_SOURCE_LABEL = {
   env: "\u74B0\u5883\u8B8A\u6578 OPENFUN_API_TOKEN\uFF08\u555F\u52D5\u6642\u8F09\u5165\uFF09",
-  "credentials-file": "\u672C\u6A5F\u8A2D\u5B9A\u6A94\uFF08setup.mjs \u8A2D\u5B9A\uFF0C\u555F\u52D5\u6642\u8F09\u5165\uFF09",
   chat: "\u5C0D\u8A71\u4E2D\u8A2D\u5B9A\uFF08\u53EA\u5B58\u5728\u672C\u6A5F MCP server \u8A18\u61B6\u9AD4\uFF0C\u91CD\u65B0\u555F\u52D5\u5F8C\u9700\u8981\u91CD\u8CBC\uFF09",
   cleared: "\u5DF2\u6E05\u9664",
   none: "\u672A\u8A2D\u5B9A"
@@ -37707,7 +37644,7 @@ function registerTokenTools(server, session) {
     "openfun_set_token",
     {
       title: "\u8A2D\u5B9A\u6B50\u5674 Token\uFF08\u672C\u6B21\u57F7\u884C\uFF09",
-      description: "\u9078\u7528\u7684\u5C0D\u8A71\u8A2D\u5B9A\u65B9\u5F0F\uFF1A\u53EA\u5728\u4F7F\u7528\u8005\u660E\u78BA\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u8A2D\u5B9A\u3001\u6216\u4E3B\u52D5\u8CBC\u51FA\u6B50\u5674 API Token \u5F8C\u547C\u53EB\uFF0C\u628A Token \u539F\u6A23\u653E\u5728 token \u53C3\u6578\uFF1B\u4E0D\u8981\u70BA\u4E86\u547C\u53EB\u672C\u5DE5\u5177\u4E3B\u52D5\u7D22\u53D6 Token\uFF08\u9810\u8A2D\u8ACB\u4F7F\u7528\u8005\u81EA\u5DF1\u5728\u7D42\u7AEF\u6A5F\u57F7\u884C setup.mjs\uFF09\u3002\u6703\u5148\u6AA2\u67E5\u683C\u5F0F\uFF0C\u518D\u4EE5\u56FA\u5B9A\u7684 GET https://data.openfun.tw/api/v1/me \u9A57\u8B49\uFF1B\u9A57\u8B49\u6210\u529F\u624D\u53D6\u4EE3\u76EE\u524D\u7684 Token\uFF0C\u5931\u6557\u6642\u4FDD\u7559\u539F\u672C\u72C0\u614B\u3002Token \u53EA\u5B58\u5728\u672C\u6A5F MCP server \u7A0B\u5E8F\u7684\u8A18\u61B6\u9AD4\uFF08\u91CD\u65B0\u555F\u52D5\u5F8C\u9700\u8981\u91CD\u8CBC\uFF09\uFF0C\u4E0D\u5BEB\u6A94\u3001\u4E0D\u986F\u793A Token\u3002\u4E0D\u8981\u7528 shell\u3001curl\u3001\u547D\u4EE4\u5217\u6216\u5BEB\u6A94\u8655\u7406 Token\uFF0C\u56DE\u8986\u4E2D\u4E5F\u4E0D\u8981\u91CD\u8907 Token \u7684\u4EFB\u4F55\u90E8\u5206\u3002",
+      description: "\u9078\u7528\u7684\u5C0D\u8A71\u8A2D\u5B9A\u65B9\u5F0F\uFF1A\u53EA\u5728\u4F7F\u7528\u8005\u660E\u78BA\u9078\u64C7\u5728\u5C0D\u8A71\u4E2D\u8A2D\u5B9A\u3001\u6216\u4E3B\u52D5\u8CBC\u51FA\u6B50\u5674 API Token \u5F8C\u547C\u53EB\uFF0C\u628A Token \u539F\u6A23\u653E\u5728 token \u53C3\u6578\uFF1B\u4E0D\u8981\u70BA\u4E86\u547C\u53EB\u672C\u5DE5\u5177\u4E3B\u52D5\u7D22\u53D6 Token\uFF08\u9810\u8A2D\u8ACB\u4F7F\u7528\u8005\u81EA\u5DF1\u5728 MCP \u8A2D\u5B9A\u756B\u9762\u7684 OPENFUN_API_TOKEN \u74B0\u5883\u8B8A\u6578\u8F38\u5165\uFF09\u3002\u6703\u5148\u6AA2\u67E5\u683C\u5F0F\uFF0C\u518D\u4EE5\u56FA\u5B9A\u7684 GET https://data.openfun.tw/api/v1/me \u9A57\u8B49\uFF1B\u9A57\u8B49\u6210\u529F\u624D\u53D6\u4EE3\u76EE\u524D\u7684 Token\uFF0C\u5931\u6557\u6642\u4FDD\u7559\u539F\u672C\u72C0\u614B\u3002Token \u53EA\u5B58\u5728\u672C\u6A5F MCP server \u7A0B\u5E8F\u7684\u8A18\u61B6\u9AD4\uFF08\u91CD\u65B0\u555F\u52D5\u5F8C\u9700\u8981\u91CD\u8CBC\uFF09\uFF0C\u4E0D\u5BEB\u6A94\u3001\u4E0D\u986F\u793A Token\u3002\u4E0D\u8981\u7528 shell\u3001curl\u3001\u547D\u4EE4\u5217\u6216\u5BEB\u6A94\u8655\u7406 Token\uFF0C\u56DE\u8986\u4E2D\u4E5F\u4E0D\u8981\u91CD\u8907 Token \u7684\u4EFB\u4F55\u90E8\u5206\u3002",
       inputSchema: {
         token: external_exports.string().max(4096).describe("\u4F7F\u7528\u8005\u5728\u5C0D\u8A71\u4E2D\u8CBC\u51FA\u7684\u6B50\u5674 API Token\uFF08\u53EA\u653E Token \u672C\u8EAB\uFF09")
       },
@@ -37736,7 +37673,7 @@ ${text}` }] };
     "openfun_clear_token",
     {
       title: "\u6E05\u9664\u6B50\u5674 Token\uFF08\u672C\u6B21\u57F7\u884C\uFF09",
-      description: "\u6E05\u9664\u9019\u500B\u672C\u6A5F MCP server \u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D\u76EE\u524D\u6709\u6548\u7684\u6B50\u5674 Token\uFF08\u4E0D\u8AD6\u4F86\u81EA\u5C0D\u8A71\u3001\u8A2D\u5B9A\u6A94\u6216\u74B0\u5883\u8B8A\u6578\uFF09\u3002\u6E05\u9664\u5F8C\u9700\u8981 Token \u7684\u67E5\u8A62\u6703\u56DE\u5831\u5C1A\u672A\u8A2D\u5B9A\uFF0C\u4E0D\u6703\u6539\u7528\u8A2D\u5B9A\u6A94\u6216\u74B0\u5883\u8B8A\u6578\uFF0C\u76F4\u5230\u4F7F\u7528\u8005\u518D\u6B21\u8A2D\u5B9A\u6216\u91CD\u65B0\u555F\u52D5\u3002\u4E0D\u6703\u522A\u9664\u8A2D\u5B9A\u6A94\u3001\u4E0D\u6703\u522A\u9664\u5C0D\u8A71\u7D00\u9304\uFF0C\u4E5F\u4E0D\u6703\u64A4\u92B7 Token\u3002",
+      description: "\u6E05\u9664\u9019\u500B\u672C\u6A5F MCP server \u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D\u76EE\u524D\u6709\u6548\u7684\u6B50\u5674 Token\uFF08\u4E0D\u8AD6\u4F86\u81EA\u5C0D\u8A71\u6216\u74B0\u5883\u8B8A\u6578\uFF09\u3002\u6E05\u9664\u5F8C\u9700\u8981 Token \u7684\u67E5\u8A62\u6703\u56DE\u5831\u5C1A\u672A\u8A2D\u5B9A\uFF0C\u4E0D\u6703\u6539\u7528\u74B0\u5883\u8B8A\u6578\uFF0C\u76F4\u5230\u4F7F\u7528\u8005\u518D\u6B21\u8A2D\u5B9A\u6216\u91CD\u65B0\u555F\u52D5\u3002\u4E0D\u6703\u522A\u9664\u74B0\u5883\u8B8A\u6578\u3001\u4E0D\u6703\u522A\u9664\u5C0D\u8A71\u7D00\u9304\uFF0C\u4E5F\u4E0D\u6703\u64A4\u92B7 Token\u3002",
       inputSchema: {},
       annotations: { title: "\u6E05\u9664\u6B50\u5674 Token\uFF08\u672C\u6B21\u57F7\u884C\uFF09", readOnlyHint: false, destructiveHint: false, idempotentHint: true, openWorldHint: false }
     },
@@ -37744,9 +37681,9 @@ ${text}` }] };
       const { previous } = await session.clearToken();
       const lines = [
         previous.client.hasToken ? `\u5DF2\u6E05\u9664\u672C\u7A0B\u5E8F\u8A18\u61B6\u9AD4\u4E2D\u7684 Token\uFF08\u539F\u4F86\u6E90\uFF1A${TOKEN_SOURCE_LABEL[previous.source]}\uFF09\u3002` : "\u672C\u7A0B\u5E8F\u76EE\u524D\u6C92\u6709\u6709\u6548\u7684 Token\uFF1B\u72C0\u614B\u5DF2\u8A2D\u70BA\u6E05\u9664\u3002",
-        "\u4E4B\u5F8C\u9700\u8981 Token \u7684\u67E5\u8A62\u6703\u56DE\u5831\u5C1A\u672A\u8A2D\u5B9A\uFF0C\u4E0D\u6703\u6539\u7528\u8A2D\u5B9A\u6A94\u6216\u74B0\u5883\u8B8A\u6578\uFF1B\u8981\u7E7C\u7E8C\u67E5\u8A62\uFF0C\u53EF\u4EE5\u5728\u5C0D\u8A71\u4E2D\u91CD\u65B0\u8A2D\u5B9A\uFF0C\u6216\u91CD\u65B0\u555F\u52D5 Codex\u3002",
+        "\u4E4B\u5F8C\u9700\u8981 Token \u7684\u67E5\u8A62\u6703\u56DE\u5831\u5C1A\u672A\u8A2D\u5B9A\uFF0C\u4E0D\u6703\u6539\u7528\u74B0\u5883\u8B8A\u6578\uFF1B\u8981\u7E7C\u7E8C\u67E5\u8A62\uFF0C\u53EF\u4EE5\u5728\u5C0D\u8A71\u4E2D\u91CD\u65B0\u8A2D\u5B9A\uFF0C\u6216\u91CD\u65B0\u555F\u52D5 Codex\u3002",
         "\u9019\u4E0D\u6703\u522A\u9664\u5C0D\u8A71\u7D00\u9304\u4E2D\u7684 Token\uFF0C\u4E5F\u4E0D\u6703\u64A4\u92B7 Token\uFF1B\u8981\u8B93 Token \u5931\u6548\u8ACB\u5230 https://data.openfun.tw/user \u64A4\u92B7\u3002",
-        "\u65E2\u6709\u7684\u672C\u6A5F\u8A2D\u5B9A\u6A94\uFF08setup.mjs\uFF09\u6216\u74B0\u5883\u8B8A\u6578\u4E0D\u6703\u88AB\u522A\u9664\uFF0C\u91CD\u65B0\u555F\u52D5 Codex \u5F8C\u53EF\u80FD\u518D\u6B21\u8F09\u5165\uFF1B\u8981\u79FB\u9664\u8A2D\u5B9A\u6A94\u8ACB\u81EA\u5DF1\u5728\u7D42\u7AEF\u6A5F\u57F7\u884C setup.mjs --remove\u3002"
+        "MCP \u8A2D\u5B9A\u756B\u9762\u7684\u74B0\u5883\u8B8A\u6578\u4E0D\u6703\u88AB\u522A\u9664\uFF0C\u91CD\u65B0\u555F\u52D5 Codex \u5F8C\u53EF\u80FD\u518D\u6B21\u8F09\u5165\uFF1B\u8981\u79FB\u9664\u8ACB\u81EA\u884C\u522A\u9664 OPENFUN_API_TOKEN \u9805\u76EE\u4E26\u91CD\u65B0\u555F\u52D5\u3002"
       ];
       return { content: [{ type: "text", text: redact(lines.join("\n"), previous.client.secretForRedaction) }] };
     }
@@ -38292,7 +38229,7 @@ function createServer(config2, opts = {}) {
 async function main() {
   let runtime;
   try {
-    runtime = resolveRuntime(process.argv.slice(2), process.env, process.argv[1] ?? "");
+    runtime = resolveRuntime(process.argv.slice(2), process.env);
   } catch (err) {
     process.stderr.write(`[openfun] \u8A2D\u5B9A\u932F\u8AA4\uFF1A${err.message}
 `);
