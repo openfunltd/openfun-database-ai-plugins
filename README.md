@@ -50,18 +50,31 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 適用在你電腦上執行的 Codex（已用 Codex CLI 0.159.3 驗證），不能在 ChatGPT 網頁版使用。安裝目前仍需要**終端機**與 **Node.js 18 以上**（用 `node --version` 確認）。
 
-1. 到 <https://data.openfun.tw/user> 建立一般 API Token。
-2. 把 `openfun-codex-plugin.zip` 解壓到會長期保留的資料夾，例如 `~/openfun-codex-plugin`。
-3. 在終端機執行（路徑換成你的資料夾）：
-   ```bash
-   codex plugin marketplace add ~/openfun-codex-plugin
-   codex plugin add openfun-data@openfun
-   node ~/openfun-codex-plugin/setup.mjs
-   ```
-   最後一行會請你貼上 Token（畫面不會顯示），存到本機設定檔。
-4. 重新啟動 Codex，問：「請檢查歐噴資料庫的設定是否正常」。之後重新啟動不用再輸入，直到 Token 過期、被撤銷或你移除設定檔。
+先到 <https://data.openfun.tw/user> 建立一般 API Token，並把 `openfun-codex-plugin.zip` 解壓到會長期保留的資料夾（路徑加引號，名稱可有空白）。
 
-不想把 Token 存在電腦上，也可以改在對話中貼短效 Token（重新啟動後需重貼）。Windows、更新或移除 Token、解除安裝與故障排除：[codex/README.md](codex/README.md)（ZIP 內也附同一份）。
+### Unix（macOS／Linux）
+
+解壓到 `$HOME/openfun-codex-plugin`，在終端機執行：
+
+```bash
+codex plugin marketplace add "$HOME/openfun-codex-plugin"
+codex plugin add openfun-data@openfun
+node "$HOME/openfun-codex-plugin/setup.mjs"
+```
+
+### Windows（PowerShell）
+
+解壓到 `$HOME\openfun-codex-plugin`，在 PowerShell 執行：
+
+```powershell
+codex plugin marketplace add "$HOME\openfun-codex-plugin"
+codex plugin add openfun-data@openfun
+node "$HOME\openfun-codex-plugin\setup.mjs"
+```
+
+第三行會請你貼上 Token（畫面不會顯示），存到本機設定檔。接著重新啟動 Codex，問：「請檢查歐噴資料庫的設定是否正常」。之後重新啟動不用再輸入，直到 Token 過期、被撤銷或你移除設定檔。
+
+不想把 Token 存在電腦上，也可以改在對話中貼短效 Token（重新啟動後需重貼）。更新或移除 Token、解除安裝與故障排除：[codex/README.md](codex/README.md)（ZIP 內也附同一份）。
 
 ## Token 注意事項
 

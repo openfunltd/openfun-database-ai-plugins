@@ -20,18 +20,33 @@
 
 ## 安裝（在終端機執行）
 
-1. 到 https://data.openfun.tw/user 建立一般 API Token。
-2. 把 `openfun-codex-plugin.zip` 解壓到一個**會長期保留**的資料夾，例如 `~/openfun-codex-plugin`（名稱可以有空白或中文）。
-3. 執行（路徑換成你的資料夾）：
-   ```bash
-   codex plugin marketplace add ~/openfun-codex-plugin
-   codex plugin add openfun-data@openfun
-   node ~/openfun-codex-plugin/setup.mjs
-   ```
-   最後一行會請你貼上 Token 後按 Enter；畫面不會顯示輸入內容。它只檢查格式、不連網，Token 是否有效要在下一步確認。
-4. 重新啟動 Codex，問：「請檢查歐噴資料庫的設定是否正常」。看到「Token 有效，已可查詢」就可以開始用。
+先到 https://data.openfun.tw/user 建立一般 API Token，並下載 `openfun-codex-plugin.zip`。
+ZIP 要解壓到**會長期保留**的資料夾，解壓後 `setup.mjs` 應直接位於該資料夾內。下列指令的路徑都加了引號，資料夾名稱有空白或中文也能用；改用其他資料夾時，請替換第一行和第三行的路徑。
 
-Windows（PowerShell）的第三行改為 `node "$HOME\openfun-codex-plugin\setup.mjs"`。
+### Unix（macOS／Linux）
+
+1. 把 ZIP 解壓到 `$HOME/openfun-codex-plugin`（例如 macOS 為 `/Users/你的帳號/openfun-codex-plugin`，Linux 為 `/home/你的帳號/openfun-codex-plugin`）。
+2. 在終端機執行：
+   ```bash
+   codex plugin marketplace add "$HOME/openfun-codex-plugin"
+   codex plugin add openfun-data@openfun
+   node "$HOME/openfun-codex-plugin/setup.mjs"
+   ```
+
+### Windows（PowerShell）
+
+1. 把 ZIP 解壓到 `$HOME\openfun-codex-plugin`（例如 `C:\Users\你的帳號\openfun-codex-plugin`）。
+2. 在 PowerShell 執行：
+   ```powershell
+   codex plugin marketplace add "$HOME\openfun-codex-plugin"
+   codex plugin add openfun-data@openfun
+   node "$HOME\openfun-codex-plugin\setup.mjs"
+   ```
+
+### 輸入 Token 並確認
+
+1. 第三行會請你貼上 Token 後按 Enter；畫面不會顯示輸入內容。它只檢查格式、不連網，Token 是否有效要在下一步確認。
+2. 重新啟動 Codex，問：「請檢查歐噴資料庫的設定是否正常」。看到「Token 有效，已可查詢」就可以開始用。
 
 Token 存一次即可，Codex 重新啟動時會自動讀取；直到 Token 過期、被撤銷或你移除設定檔才需要更新。
 
