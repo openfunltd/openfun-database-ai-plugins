@@ -1,6 +1,6 @@
 ---
 name: openfun-data
-description: 當使用者想查台灣公共資料或政府開放資料時使用，例如公司稅籍登記與統一編號、選舉與候選人得票、政府採購標案、立法院議事、法規、政府機關或行政區代碼，或提到「歐噴」「openfun」「data.openfun.tw」，想查某公司／機關／人物出現在哪些資料、要列出記錄、算筆數或分組統計時。
+description: 當使用者想查台灣公共資料或政府開放資料時使用，例如公司稅籍登記與統一編號、選舉與候選人得票、政府採購標案、立法院議事、法規、政府機關或行政區代碼，或提到「歐噴」「openfun」「data.openfun.tw」，想查某公司／機關／人物出現在哪些資料、要列出記錄、算筆數或分組統計，或要求檢查／修復歐噴資料庫連線、設定歐噴 Token 時。
 ---
 
 # 歐噴資料庫查詢
@@ -21,29 +21,57 @@ description: 當使用者想查台灣公共資料或政府開放資料時使用�
    驗證 `openfun-data@openfun`；`not_installed` 或 `public global listed plugin` 錯誤是公開目錄的結果，
    不能證明本機外掛未安裝或 MCP 未啟動。
 
+若同時看見多組歐噴工具，優先使用來源為 `openfun-local` 的一組；設定 Token、檢查設定與後續查詢
+都使用同一個 MCP namespace，避免對話 Token 只設到其中一個程序。
+
 完成可用的工具探索仍找不到時，只回報「目前對話的工具介面未提供歐噴工具」，不要假裝呼叫成功，
 也不要改用網路搜尋、DNS 或 curl 當作 MCP 驗證。設定畫面的「來自外掛程式」可能只列名稱、無法點擊；
 不要要求使用者從那一列查看工具數或錯誤。日誌 `ready` 只證明該次 MCP 啟動就緒，不能當作本次對話已能呼叫工具的證據。
 不要重複要求已重啟／重裝的使用者再試一次；需核對出問題對話的實際工具目錄或該對話的 MCP 工具清單。
 只有啟動錯誤明確指向 Node.js 時才排查 Node.js 18 以上；工具尚未取得前，不要求重設或提供 Token。
 
+## 使用者要求修復時：獨立本機 MCP
+本方式已由使用者在 macOS 15.7.7、Codex 26.930.51102 實測成功；外掛附帶 MCP 工具未送進對話的根因仍未確認。
+工具可呼叫時直接使用。只有工具探索確認缺少歐噴工具且使用者要求修復／設定，或使用者要求將不可編輯的外掛 MCP 改成可在畫面設定 Token 的獨立 MCP 時，才執行：
+1. 找到目前已安裝 `openfun-data` 外掛的實際目錄（可由本 skill 的本機路徑或安裝資訊核對），
+   確認 manifest 名稱及 `server/index.mjs`、`setup.mjs` 存在；不要猜快取路徑。
+   若管理政策明確禁止該 MCP 或工具，不以獨立伺服器繞過限制。
+2. 複製 `server/index.mjs`、`setup.mjs`、`LICENSE`、`THIRD_PARTY_LICENSES.md` 到長期保留的本機資料夾，
+   保持 `server/` 結構。macOS／Linux 使用家目錄的 `.local/share/openfun-data/codex-mcp`；
+   Windows 使用本機應用程式資料目錄的 `openfun-data/codex-mcp`，先確認實際路徑（Windows 尚未實機驗收）。
+   只複製這四個程式／授權檔，既有副本不同時先備份；不搬移任何憑證或執行期資料。
+3. 備份 Codex 設定（備份沿用原權限），只新增／更新 `[mcp_servers.openfun-local]`：
+   `command` 為已確認可執行的 Node 絕對路徑，`args` 為副本的 `server/index.mjs` 絕對路徑及 `--host=codex`，
+   `cwd` 為副本根目錄；不設定 Token、env 或 headers。
+   保持外掛啟用，只將 `[plugins."openfun-data@openfun".mcp_servers."openfun-data"].enabled` 設為 `false`。
+   確認目前市集參照確為該名稱，其他設定一律保留。操作可由你透過現有本機檔案／執行工具完成，不要求使用者自己輸入安裝指令。
+4. 核對變更後設定可解析、程式路徑存在，回報新增 `openfun-local`，請使用者重新啟動 Codex 載入新設定；
+   不自行關閉程式，不在目前缺少工具的對話假裝驗證成功。重新啟動後先探索工具並呼叫 `openfun_check_config`。
+   既有本機 Token 由 MCP 自行讀取，不因換載入方式而索取新 Token；檢查有效後繼續原本查詢。
+5. 外掛更新不會自動更新這份副本；使用者要求更新時，從已更新外掛重新複製上述四個檔案，保留 Token 設定。
+
 ## Token
-預設方式是使用者本人在終端機執行 plugin 內的 `setup.mjs`，把 Token 存到本機設定檔，Codex 重新啟動後自動讀取。
+獨立本機 MCP 預設方式是使用者本人在 Codex 的 MCP 設定畫面輸入，儲存後重新啟動。
 1. 只有在工具回報「尚未設定」或「Token 無效／過期」時才處理 Token；目前已有可用的 Token 時不要再索取。
-2. 預設請使用者：到 https://data.openfun.tw/user 建立（或重新建立）一般 API Token，在自己的終端機執行
-   工具錯誤建議中的 `node "<setup.mjs 路徑>"`（路徑照抄工具給的，不要猜），依提示貼上，然後重新啟動 Codex，
-   再呼叫 `openfun_check_config` 確認。setup.mjs 只檢查格式、不連網，是否有效要看 `openfun_check_config`。
+2. 預設請使用者：到 https://data.openfun.tw/user 建立（或重新建立）一般 API Token，在「設定 → MCP 伺服器」
+   編輯獨立本機歐噴伺服器（例如 `openfun-local`），在「環境變數」新增金鑰 `OPENFUN_API_TOKEN`，值貼 Token。
+   「環境變數透傳」留空，儲存後重新啟動 Codex，再呼叫 `openfun_check_config`。這個值存入 Codex 本機設定，未加密；
+   請勿分享含有 Token 的設定檔或截圖。它優先於 `setup.mjs` 存的 Token。
+   選用：沒有可編輯的 MCP 入口或使用者選擇終端機方式時，請使用者本人執行工具建議中的
+   `node "<setup.mjs 路徑>"`（照抄工具給的路徑），依提示輸入後重新啟動，再檢查設定。
+   setup.mjs 只檢查格式、不連網，是否有效要看 `openfun_check_config`；已有環境變數值時，更新設定檔不會取代該值。
    可以簡短補一句「也可以選擇在對話中使用短效 Token」，不要主動請使用者把 Token 貼到對話。
-3. 你不能代為執行 setup.mjs（它只接受終端機輸入）。不要讀取、顯示或搜尋 Token 設定檔，不要用 shell、curl、
-   命令列參數、環境變數或寫檔處理或轉送 Token，回覆中也不要重複 Token 的全部或任何一部分。
+3. 你不能代為執行 setup.mjs（它只接受終端機輸入）。不要讀取、顯示或搜尋 Token 設定檔、MCP 環境變數的 Token 值，
+   不要代為用 shell、curl、命令列參數、環境變數或寫檔處理或轉送 Token；畫面中的值由使用者本人輸入，回覆不重複 Token。
 4. 對話方式（選用）：使用者明確選擇在對話中設定時，照這段話說：
    「請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。」
    使用者貼出、還沒設定過的 Token（包含主動貼出的），原樣傳給 `openfun_set_token`，成功後繼續原本的查詢，並告訴使用者：
    這個 Token 只存在本機 MCP server 記憶體，Codex 重新啟動後需要重貼。無法從 Token 判斷有效期限，不要說已確認是短效 Token。
    設定失敗時照錯誤說明處理，原本的 Token 狀態不變。曾被拒絕、已過期或已清除的 Token，不要從聊天紀錄自行再次套用
    （除非使用者明確要求重新使用）。
-5. 使用者要求清除時呼叫 `openfun_clear_token`，並說明：這只清除本次執行記憶體中的 Token，不會刪除本機設定檔或對話紀錄，
-   也不會撤銷 Token（要撤銷請到歐噴）；重新啟動 Codex 後可能再次載入設定檔。要刪除設定檔，請使用者自己執行 `setup.mjs --remove`。
+5. 使用者要求清除時呼叫 `openfun_clear_token`，並說明：這只清除本次執行記憶體中的 Token，不會刪除環境變數、本機設定檔或對話紀錄，
+   也不會撤銷 Token（要撤銷請到歐噴）；重新啟動 Codex 後可能再次載入。畫面設定由使用者本人刪除 `OPENFUN_API_TOKEN` 項目；
+   要刪除本機 Token 設定檔，請使用者自己執行 `setup.mjs --remove`。只刪除一處，重啟後仍可能從另一處載入。
 
 ## 查詢流程
 1. 本次對話第一次使用時呼叫 `openfun_guide`。

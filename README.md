@@ -7,10 +7,10 @@
 請直接下載這個 ZIP，不要使用 GitHub 自動產生的「Source code (zip)」。
 
 - 查詢工具都是唯讀，只會連到 `https://data.openfun.tw`。
-- **桌面版可從畫面安裝**。Token 可在對話中設定；想讓重新啟動後不用重貼，也可用終端機存到本機。
+- **桌面版可從畫面安裝**。獨立本機 MCP 可直接在設定畫面輸入 Token，重新啟動後不用重貼；也提供對話短效 Token 與選用的終端機方式。
 - 這是**本機** MCP server：只在你電腦上執行的 Codex 中運作。它**不能**在 ChatGPT 網頁版使用，
   也不是公開 Plugins Directory 上架的 plugin。
-- 已驗證 Codex 0.159.3 的市集安裝後端、MCP 載入及工具呼叫。Mac 桌面版 26.930.51102 仍有安裝成功、MCP 日誌顯示 `ready`，但對話拿不到工具的回報；尚未確認原因，不能視為已修好。ZIP 上傳也有失敗回報。
+- macOS 15.7.7、Codex 26.930.51102 已由使用者實測：改用下方的獨立本機 MCP 後，Token 檢查及資料查詢成功。外掛附帶 MCP 仍有工具未送進對話的問題，根因尚未確認；ZIP 上傳也有失敗回報。Windows 尚未實機驗收。
 
 ## 需要
 
@@ -30,9 +30,22 @@
    | 稀疏路徑 | 留空 |
 
 3. 在 OpenFun 市集安裝「歐噴資料庫」，開新對話說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
-4. 尚未設定 Token 時，可說：「我要在對話中設定歐噴 Token」，再依提示貼上**短效 Token**。Token 會留在對話及工具呼叫紀錄中，請勿分享，用完可到歐噴撤銷。
+4. 尚未設定 Token 時，獨立本機 MCP 建議使用下方「在 MCP 設定畫面輸入 Token」。也可選擇在對話中使用短效 Token，或用 `setup.mjs` 存到本機。
 
 市集分支已包含完整的 MCP 程式，不需要自行編譯或輸入安裝指令。
+
+### 已安裝但對話找不到工具：請 Codex 修復
+
+在本機對話選取「歐噴資料庫」，貼上：
+
+> 請修復歐噴資料庫連線，依外掛指引改用獨立本機 MCP「openfun-local」。請直接替我設定，保留其他設定，不開啟或搬移憑證，也不用重新設定 Token。
+
+Codex 會把同一支歐噴程式複製到固定資料夾，新增本機 MCP，保留外掛的聊天指引並停用它附帶的 MCP。
+完成後重新啟動 Codex、開新對話，說：「請用歐噴資料庫檢查設定，然後查『開放文化基金會』。」
+**你不用自己輸入安裝指令；原本已儲存的 Token 可繼續使用。** 只有工具實際回報未設定或過期，才需要處理 Token。
+
+這份獨立副本不會隨市集自動更新；日後更新外掛時，請 Codex 一併更新副本。此方式符合
+[官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，仍在你的電腦執行，不需要管理伺服器。
 
 ### 選用：上傳 ZIP
 
@@ -54,6 +67,25 @@
 4. 新增市集後，安裝其中的「歐噴資料庫」，開新對話檢查設定。
 
 儲存庫的 `main` 分支放的是共用原始碼；從 GitHub 新增市集時，請在「Git 參照」填入 `codex-marketplace`。
+
+## 在 MCP 設定畫面輸入 Token（獨立本機 MCP 建議）
+
+1. 到「設定 → MCP 伺服器」，編輯 `openfun-local`（或你為獨立本機歐噴 MCP 設定的名稱）。
+2. 在「環境變數」新增：
+
+   | 欄位 | 填入 |
+   |---|---|
+   | 金鑰 | `OPENFUN_API_TOKEN` |
+   | 值 | 你在歐噴建立的一般 API Token |
+
+3. 「環境變數透傳」留空，按「儲存」，重新啟動 Codex。
+4. 開新對話說：「請用歐噴資料庫檢查設定」。看到「Token 有效，已可查詢」即可使用。
+
+**不需要終端機，也不用把 Token 貼到聊天。** Token 會存入 Codex 本機設定，未加密，請勿分享含有 Token 的設定檔或截圖。
+這個值優先於 `setup.mjs` 存的 Token。更新或移除時，回到同一個畫面修改／刪除 `OPENFUN_API_TOKEN` 項目。
+移除後若仍有 `setup.mjs` 的 Token 設定檔，重啟仍可能載入它；要一併移除請使用 `setup.mjs --remove`。
+
+若歐噴只出現在不可編輯的「來自外掛程式」區塊，先使用上方「請 Codex 修復」改成獨立本機 MCP，或選用下方的 `setup.mjs` 方式。
 
 ## 選用：終端機安裝並儲存 Token
 
@@ -121,6 +153,9 @@ node ~/openfun-codex-plugin/setup.mjs --remove   # 刪除本機設定檔
 
 ## Token 存放與安全
 
+- **MCP 畫面方式：**存在 Codex 本機設定（通常是家目錄的 `.codex/config.toml`），未加密。不要分享含有 Token 的設定檔或截圖。
+- **setup.mjs 方式：**存在下表的位置，未加密，以檔案權限保護。
+
 | 系統 | 位置 | 權限 |
 |---|---|---|
 | macOS／Linux | `~/.config/openfun-data/credentials.json` | 目錄 700、檔案 600，只有你自己能讀 |
@@ -129,7 +164,7 @@ node ~/openfun-codex-plugin/setup.mjs --remove   # 刪除本機設定檔
 - 這是一般檔案，**沒有加密**，只靠檔案權限保護，留在你自己的使用者設定目錄。權限被改成其他人可讀（macOS／Linux）時，plugin 會拒絕使用。
 - 檔案不在 plugin 資料夾內，所以重裝 plugin 不會遺失；不再使用時請執行 `setup.mjs --remove`，並到歐噴撤銷 Token。
 - plugin 無法從 Token 看出到期時間；到期與否由你在歐噴建立 Token 時的設定決定。
-- MCP server 收到 `OPENFUN_API_TOKEN` 環境變數時會優先使用，但 Codex 預設不會把它傳給 plugin。
+- MCP server 收到 `OPENFUN_API_TOKEN` 環境變數時會優先使用。獨立本機 MCP 的設定畫面可直接設定它；外掛附帶的 MCP 預設不會收到這個變數。
 
 ## 選用：在對話中使用短效 Token
 
@@ -150,11 +185,17 @@ node ~/openfun-codex-plugin/setup.mjs --remove   # 刪除本機設定檔
 
 ## 解除安裝
 
-桌面版可在「外掛程式」移除歐噴資料庫；本機 Token 設定檔需另外刪除，並到歐噴撤銷 Token。CLI 使用者可執行：
+桌面版可在「外掛程式」移除歐噴資料庫；本機 Token 設定檔需另外刪除，並到歐噴撤銷 Token。
+
+若採用上方的獨立本機 MCP，另在「設定 → MCP 伺服器」移除 `openfun-local`。
+Token 設定檔要刪除時，先用副本內的 `setup.mjs --remove`，再刪除副本資料夾；只移除外掛不會移除這個獨立 MCP。
+
+CLI 使用者可執行：
 
 ```bash
 codex plugin remove openfun-data@openfun
 codex plugin marketplace remove openfun
+codex mcp remove openfun-local  # 僅採用獨立本機 MCP 時需要
 node ~/openfun-codex-plugin/setup.mjs --remove
 ```
 
@@ -166,10 +207,10 @@ node ~/openfun-codex-plugin/setup.mjs --remove
 | 上傳 ZIP 說缺少 manifest | 重新下載本頁的 ZIP；包內包含 `.claude-plugin/plugin.json` 封存檔相容入口，請勿使用 Source code ZIP。 |
 | 上傳 ZIP 顯示「無法新增外掛程式」 | 使用上方的 GitHub 市集安裝。此訊息沒有具體原因，請提供作業系統、桌面版版本與可取得的錯誤代碼以便追查。 |
 | ZIP 匯入後沒有 MCP | 用上方「從畫面新增本機市集」安裝，這個方式直接載入包內的本機 MCP 設定。 |
-| 已安裝、有 MCP，但對話找不到工具 | 設定畫面可能只列名稱、不能點擊。日誌 `ready` 不能證明目前對話拿得到工具；需檢查出問題對話的實際工具目錄。不要反覆重裝，也不用先重設 Token。 |
+| 已安裝、有 MCP，但對話找不到工具 | 日誌 `ready` 不能證明對話拿得到工具。完成工具探索仍找不到時，使用上方「請 Codex 修復」的獨立本機 MCP 方式；macOS 已實測成功，不用反覆重裝或先重設 Token。 |
 | 回覆「未安裝」或 `public global listed plugin` | 這是公開外掛目錄的查詢結果，不能用來判定本機／Git 市集外掛。請 Codex 直接尋找本機歐噴 MCP 工具。 |
-| 尚未設定 Token | 在終端機執行 `node ~/openfun-codex-plugin/setup.mjs` 後重新啟動 Codex（或選擇在對話中貼短效 Token）。 |
-| Token 無效、已過期或類型不適用 | 到 https://data.openfun.tw/user 建立新的一般 API Token，重新執行 `setup.mjs` 更新後重新啟動 Codex。 |
+| 尚未設定 Token | 獨立本機 MCP：在 MCP 設定畫面的環境變數填 `OPENFUN_API_TOKEN`，儲存後重新啟動。也可使用 `setup.mjs` 或對話短效 Token。 |
+| Token 無效、已過期或類型不適用 | 到 https://data.openfun.tw/user 建立新的一般 API Token，在原本使用的畫面／設定程式更新後重新啟動。環境變數優先於 `setup.mjs` 的設定檔。 |
 | 設定檔權限過寬或不是一般檔案 | 重新執行 `setup.mjs`，它會以正確權限重寫。 |
 | 權限不足、額度用完、伺服器錯誤 | 這些不代表查無資料；照 Codex 回覆中的建議處理。 |
 
@@ -177,7 +218,7 @@ node ~/openfun-codex-plugin/setup.mjs --remove
 
 > 請檢查目前對話的實際工具目錄。如果有 functions.exec 和 ALL_TOOLS，找出名稱包含 openfun_check_config 的條目，再用 tools[實際名稱]({}) 呼叫。若只有工具搜尋功能，就搜尋後呼叫。不要用 plugin_management 查公開外掛目錄。若仍沒有工具，請回報實際檢查了哪個工具介面與結果；不要要求重裝或提供 Token。
 
-若檢查後仍沒有工具，代表目前對話尚無法呼叫；外掛指引無法自行補上 Codex 未提供的工具。後續應核對該對話的 MCP 工具清單，而不是把問題判定為 Token 無效。
+若檢查後仍沒有工具，請使用上方「請 Codex 修復」方式。新增設定後需重新啟動並開新對話驗證；不能只憑 `ready` 或設定檔就宣稱查詢已正常。
 
 授權：MIT（見 `LICENSE`）；內嵌第三方套件授權見 `THIRD_PARTY_LICENSES.md`。
 
