@@ -81,15 +81,47 @@ test("executor discovery：有相容入口時找到 plugin、MCP 設定與 skill
 });
 
 test("executor discovery：沒有相容入口（只有 portable 入口）時找不到 plugin 與 MCP 設定", { skip }, async () => {
-  const { found } = await discover([".codex-plugin", ".mcp.json"]);
+  const { found } = await discover([".codex-plugin", ".claude-plugin", ".mcp.json"]);
   assert.equal(found.plugin, null, "只有 root plugin.json 時 executor discovery 找不到 plugin（相容入口要修補的缺口）");
   assert.equal(found.skills.length, 1, "skill 本身仍會被找到，但不屬於任何 plugin、也沒有 MCP 設定");
 });
 
 const callText = (r) => r.content.map((c) => c.text).join("\n");
 
+// 使用桌面 app 的公開 backend API 安裝；不經 codex plugin CLI。
+// 另移除 portable／Codex manifest，驗證封存檔相容入口本身仍有 MCP，避免只成功匯入 skill。
+test("封存檔相容入口：app-server 市集安裝後能列出 11 個工具並呼叫設定檢查", { skip }, async () => {
+  const { pluginDir, env } = fixture(["plugin.json", "mcp.json", ".codex-plugin"]);
+  const { found, uri } = await discover(["plugin.json", "mcp.json", ".codex-plugin"]);
+  assert.equal(found.plugin?.manifest.path, `${uri}/.claude-plugin/plugin.json`);
+  assert.ok(found.plugin.mcpConfig);
+  const app = new CodexAppServer(env);
+  try {
+    await app.initialize();
+    const market = await app.request("marketplace/add", { source: pluginDir });
+    assert.equal(market.marketplaceName, "openfun");
+    await app.request("plugin/install", {
+      marketplacePath: join(market.installedRoot, ".agents", "plugins", "marketplace.json"),
+      pluginName: "openfun-data",
+    });
+    const status = await app.request("mcpServerStatus/list", { detail: "toolsAndAuthOnly" });
+    const ours = status.data.filter((s) => s.name === "openfun-data");
+    assert.equal(ours.length, 1);
+    assert.deepEqual(Object.keys(ours[0].tools).sort(), TOOLS);
+    const thread = await app.request("thread/start", { ephemeral: true });
+    const r = await app.request("mcpServer/tool/call", {
+      server: "openfun-data", threadId: thread.thread.id,
+      tool: "openfun_check_config", arguments: {},
+    });
+    assert.equal(r.isError, true);
+    assert.match(callText(r), /尚未設定可用的歐噴 API Token/);
+  } finally {
+    await app.close();
+  }
+});
+
 test("legacy 入口：只有 .codex-plugin/plugin.json 與 .mcp.json 時，Codex 實際安裝、啟動一個 server、11 個工具、未設定 Token 的回覆", { skip: linuxOnly }, async () => {
-  const { pluginDir, codexHome, userHome, env } = fixture(["plugin.json", "mcp.json"]);
+  const { pluginDir, codexHome, userHome, env } = fixture(["plugin.json", "mcp.json", ".claude-plugin"]);
   const codex = (args) => {
     const r = spawnSync("codex", [...args, "--json"], { env, encoding: "utf8", timeout: 120_000 });
     assert.equal(r.status, 0, `codex ${args.join(" ")}\n${r.stdout}\n${r.stderr}`);

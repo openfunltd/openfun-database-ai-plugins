@@ -62,6 +62,8 @@ const INVALID = {
   "相容 manifest 為 null": [({ edit }) => edit(".codex-plugin/plugin.json", () => null), /JSON object/],
   "相容 MCP 為 null": [({ edit }) => edit(".mcp.json", () => null), /JSON object/],
   "缺少相容入口": [({ dir }) => rmSync(join(dir, ".codex-plugin"), { recursive: true }), /缺少相容入口/],
+  "缺少封存檔匯入入口": [({ dir }) => rmSync(join(dir, ".claude-plugin"), { recursive: true }), /\.claude-plugin/],
+  "封存檔匯入入口遺失 MCP": [({ edit }) => edit(".claude-plugin/plugin.json", (j) => (delete j.mcpServers, j)), /\.claude-plugin/],
   "相容入口不是目錄": [({ dir }) => { rmSync(join(dir, ".codex-plugin"), { recursive: true }); writeFileSync(join(dir, ".codex-plugin"), "{}"); }, /必須是目錄/],
   "相容 manifest 版本不同步": [({ edit }) => edit(".codex-plugin/plugin.json", (j) => ({ ...j, version: "9.9.9" })), /version/],
   "相容技能路徑離開 plugin": [({ edit }) => edit(".codex-plugin/plugin.json", (j) => ({ ...j, skills: "./../skills/" })), /skills/],

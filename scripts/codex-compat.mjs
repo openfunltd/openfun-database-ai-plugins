@@ -11,6 +11,9 @@
 // args 則由 node 依 cwd 解析，因此把 `${PLUGIN_ROOT}/x` 轉成 `./x`、cwd 轉成 `.`。
 
 export const COMPAT_MANIFEST = ".codex-plugin/plugin.json";
+// 桌面版封存檔匯入器另有只接受 Claude manifest／top-level SKILL.md 的版本。
+// 這個入口只為 ZIP 格式相容，仍指向同一組 skill 與本機 MCP，不是 Claude 的聊天指引包。
+export const ARCHIVE_MANIFEST = ".claude-plugin/plugin.json";
 export const COMPAT_MCP = ".mcp.json";
 
 const ROOT_PREFIX = "${PLUGIN_ROOT}/";
@@ -23,6 +26,13 @@ export function compatManifest(manifest) {
   out.mcpServers = `./${COMPAT_MCP}`;
   const iface = manifest.extensions?.["com.openai"]?.interface;
   if (iface) out.interface = iface;
+  return out;
+}
+
+export function archiveManifest(manifest) {
+  const out = compatManifest(manifest);
+  // interface 是 Codex 欄位，Claude manifest 不接受。
+  delete out.interface;
   return out;
 }
 

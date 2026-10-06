@@ -14,7 +14,7 @@ import { existsSync, readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { isDeepStrictEqual } from "node:util";
-import { COMPAT_MANIFEST, COMPAT_MCP, compatManifest, compatMcp } from "./codex-compat.mjs";
+import { ARCHIVE_MANIFEST, COMPAT_MANIFEST, COMPAT_MCP, archiveManifest, compatManifest, compatMcp } from "./codex-compat.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const SCHEMA_DIR = join(root, "schemas", "agent-plugins");
@@ -197,6 +197,10 @@ export function validateCodexPlugin(dir) {
   }
 
   checkCompat(base, manifest, mcp, errors);
+  const archive = readJson(join(base, ARCHIVE_MANIFEST), errors, ARCHIVE_MANIFEST);
+  if (manifest && !isDeepStrictEqual(archive, archiveManifest(manifest))) {
+    errors.push(`${ARCHIVE_MANIFEST} 需與由 plugin.json 產生的封存檔相容入口相同（請重新 build）`);
+  }
 
   const market = readJson(join(base, ".agents", "plugins", "marketplace.json"), errors, ".agents/plugins/marketplace.json");
   if (market) {

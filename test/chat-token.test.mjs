@@ -399,7 +399,7 @@ test("打包後的 Codex server：stdout／stderr 不含 Token，不寫任何檔
   }
 });
 
-test("文件：三份說明的下載連結都指向目前版本；Codex 預設在安裝時以 setup.mjs 存本機，對話 Token 為選用，不要求限縮權限", async () => {
+test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Token 方式，不要求限縮權限", async () => {
   const { readFileSync } = await import("node:fs");
   const root = fileURLToPath(new URL("..", import.meta.url));
   const read = (rel) => readFileSync(join(root, rel), "utf8");
@@ -414,13 +414,17 @@ test("文件：三份說明的下載連結都指向目前版本；Codex 預設�
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip"]) assert.ok(docs["docs/CLAUDE_DESKTOP.md"].includes(`download/v${version}/${f}`));
   for (const f of ["openfun-claude-extension.mcpb", "openfun-chat-plugin.zip", "openfun-codex-plugin.zip"]) assert.ok(docs["README.md"].includes(`download/v${version}/${f}`));
   assert.ok(docs["codex/README.md"].includes(`download/v${version}/openfun-codex-plugin.zip`));
-  // Codex 預設：安裝指令接著執行 setup.mjs 存本機；對話短效 Token 是另一章的選用方式
+  // 安裝不用終端機；另保留 CLI 安裝與本機 Token 儲存指令。
   const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n\s*node [^\n]*setup\.mjs"?\n/;
-  for (const name of ["README.md", "codex/README.md"]) assert.match(docs[name], install, `${name} 的安裝指令包含 setup.mjs`);
+  for (const name of ["README.md", "codex/README.md"]) {
+    assert.match(docs[name], /新增外掛程式/);
+    assert.match(docs[name], /新增外掛市集/);
+    assert.doesNotMatch(docs[name], /安裝需要終端機|安裝目前仍需要/);
+  }
   const codex = docs["codex/README.md"];
+  assert.match(codex, install);
   const optional = codex.indexOf("## 選用：在對話中使用短效 Token");
   assert.ok(optional > 0);
-  assert.ok(!codex.slice(0, optional).includes(PROMPT), "主要流程不請使用者把 Token 貼到對話");
   assert.ok(codex.slice(optional).includes(PROMPT));
   assert.match(codex, /沒有加密/);
   assert.match(codex, /重新啟動後需要重新貼上/);

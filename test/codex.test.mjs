@@ -23,6 +23,7 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const zipFile = join(root, "dist", "openfun-codex-plugin.zip");
 const ALLOWLIST = [
   ".agents/plugins/marketplace.json",
+  ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
   ".mcp.json",
   "LICENSE",

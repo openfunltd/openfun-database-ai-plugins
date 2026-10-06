@@ -150,7 +150,7 @@ OPENFUN_API_TOKEN=xxx npx @modelcontextprotocol/inspector node build/bundle/serv
 
 採官方建議的 portable 格式：根目錄 `plugin.json`（`$schema` 為 Agent Plugins 1.0.0，Codex 專屬介面設定放在
 `extensions.com.openai.interface`）、根目錄 `mcp.json`、`skills/`。
-打包時另由同一份設定產生 `.codex-plugin/plugin.json` 與 `.mcp.json` 相容入口；不另外維護重複設定。
+打包時另由同一份設定產生 `.codex-plugin/plugin.json`、`.claude-plugin/plugin.json` 與 `.mcp.json` 相容入口；不另外維護重複設定。
 Codex 0.159.3 的 executor capability discovery 只搜尋 `.codex-plugin/` 等入口，因此只有 portable 入口時
 能找到技能，卻找不到 plugin 與 MCP 設定。相容入口的 args 使用 `./server/index.mjs`，cwd 使用 `.`，
 由 Codex 解析成 plugin 根目錄；不使用 legacy loader 不展開的 placeholder。
@@ -174,11 +174,11 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 
 ### Token
 
-預設流程是本機設定檔：Codex 安裝本來就需要終端機，所以 README 的安裝指令在 `codex plugin add` 後接著執行
+桌面版可上傳 ZIP 或新增本機市集，聊天 Token 不需要終端機。選擇持久儲存時執行
 `node <解壓資料夾>/setup.mjs`，使用者存一次，之後每次啟動 server 都會讀取。缺少或失效時，host 提示請使用者本人在終端機執行
 `node "<PLUGIN_ROOT>/setup.mjs"` 後重新啟動，不預設在對話索取 Token；AI 不能代跑這個 TTY 程式，也不讀取或轉送 Token 檔。
 
-- 位置：POSIX `$HOME/.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
+- 位置：POSIX 家目錄下的 `.config/openfun-data/credentials.json`；Windows `%APPDATA%\openfun-data\credentials.json`。
   只用 HOME／APPDATA 推導，因為 Codex 只傳這些變數給 MCP server；刻意不用 XDG_CONFIG_HOME。
 - `setup.mjs` 只從 TTY 以 raw mode 讀取、不回顯；拒絕管線輸入與命令列參數；只檢查格式、不連網；以 0600 暫存檔原子替換。
   Token 是否有效由重新啟動後的 `openfun_check_config`（`GET /api/v1/me`）確認。
@@ -221,3 +221,9 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
   因此已移除該 CLI。日後若需要簽章，請在上游修補後再評估，並在獨立環境進行，不要放回本專案依賴。
 - 授權暫定 MIT（`LICENSE`、`manifest.json`、`package.json`），對外發布前請確認。
 - manifest 使用 v0.3（官方 `mcpb-manifest-latest.schema.json` 指向 v0.3；v0.4 主要新增 `uv` Python 類型）。
+
+### 桌面版封存檔入口與驗證界線
+
+ZIP 根目錄含 `.claude-plugin/plugin.json`，對應桌面版曾回報「archive must contain .claude-plugin/plugin.json or top-level SKILL.md」的匯入器格式。此檔案從同一份 portable manifest 產生，移除 Codex 專用 interface，仍宣告 `skills` 與 `.mcp.json`；不建立第二套 MCP。
+
+`test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 11 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI；若匯入器只保留 skill，需使用文件中的畫面新增本機市集方式。

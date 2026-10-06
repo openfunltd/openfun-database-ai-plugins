@@ -15,6 +15,7 @@ const outFile = join(root, "dist", "openfun-codex-plugin.zip");
 
 export const CODEX_PLUGIN_FILES = [
   ".agents/plugins/marketplace.json",
+  ".claude-plugin/plugin.json",
   ".codex-plugin/plugin.json",
   ".mcp.json",
   "LICENSE",

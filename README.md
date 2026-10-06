@@ -8,7 +8,7 @@
 
 AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改任何資料。
 
-兩個平台的安裝方式不同：Claude Desktop 用滑鼠安裝即可；**Codex 安裝目前仍需要終端機和 Node.js 18 以上**，Token 就在同一次安裝時用終端機設定一次，存在本機。
+兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；Token 可在對話中設定，或用終端機存到本機。
 
 ## 下載安裝檔（v0.1.0 測試版）
 
@@ -26,10 +26,10 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | | Claude Desktop | Codex |
 |---|---|---|
 | 安裝檔 | `openfun-claude-extension.mcpb`（必要）＋ `openfun-chat-plugin.zip`（可選指引） | `openfun-codex-plugin.zip`（本機 plugin） |
-| 安裝方式 | 雙擊或在設定畫面安裝 | 終端機指令 |
+| 安裝方式 | 雙擊或在設定畫面安裝 | 上傳 ZIP 或新增本機市集 |
 | 需要 Node.js | 不需要 | 需要 18 以上 |
-| Token 設定 | 擴充套件設定畫面的欄位 | 安裝時在終端機設定一次（也可選擇在對話中貼短效 Token） |
-| Token 存放 | 系統憑證儲存區（加密） | 本機設定檔（未加密，以檔案權限保護），重新啟動後自動讀取 |
+| Token 設定 | 擴充套件設定畫面的欄位 | 對話中貼短效 Token，或用終端機存到本機 |
+| Token 存放 | 系統憑證儲存區（加密） | 對話 Token 只存在記憶體；也可存本機設定檔（未加密） |
 | 完整說明 | [Claude Desktop 說明](docs/CLAUDE_DESKTOP.md) | [Codex plugin 說明](codex/README.md) |
 
 兩個平台都要到 <https://data.openfun.tw/user> 登入，建立**一般 API Token**（不是 Frontend Token）。
@@ -48,44 +48,27 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 ## Codex 安裝
 
-適用在你電腦上執行的 Codex（已用 Codex CLI 0.159.3 驗證），不能在 ChatGPT 網頁版使用。安裝目前仍需要**終端機**與 **Node.js 18 以上**（用 `node --version` 確認）。
+適用本機 Codex 桌面版，需要 **Node.js 18 以上**。不用管理伺服器。
 
-先到 <https://data.openfun.tw/user> 建立一般 API Token，並把 `openfun-codex-plugin.zip` 解壓到會長期保留的資料夾（路徑加引號，名稱可有空白）。
+1. 下載 `openfun-codex-plugin.zip`。
+2. 到「外掛程式」，選擇「本機」，按「新增 → 新增外掛程式」，上傳 ZIP 並啟用。
+3. 開新對話，說：「請直接呼叫歐噴 MCP 的 openfun_check_config」。
+4. 尚未設定 Token 時，說：「我要在對話中設定歐噴 Token」，依提示貼上短效 Token。
 
-### Unix（macOS／Linux）
+**Token 會留在對話及工具呼叫紀錄中，建議使用短效 Token；重新啟動後需重貼。** 想讓重新啟動後不用重貼，也可用終端機存到本機設定檔。
 
-解壓到家目錄下的 `openfun-codex-plugin` 資料夾，在終端機執行：
-
-```bash
-codex plugin marketplace add "$HOME/openfun-codex-plugin"
-codex plugin add openfun-data@openfun
-node "$HOME/openfun-codex-plugin/setup.mjs"
-```
-
-### Windows（PowerShell）
-
-解壓到家目錄下的 `openfun-codex-plugin` 資料夾，在 PowerShell 執行：
-
-```powershell
-codex plugin marketplace add "$HOME\openfun-codex-plugin"
-codex plugin add openfun-data@openfun
-node "$HOME\openfun-codex-plugin\setup.mjs"
-```
-
-第三行會請你貼上 Token（畫面不會顯示），存到本機設定檔。接著重新啟動 Codex，問：「請檢查歐噴資料庫的設定是否正常」。之後重新啟動不用再輸入，直到 Token 過期、被撤銷或你移除設定檔。
-
-不想把 Token 存在電腦上，也可以改在對話中貼短效 Token（重新啟動後需重貼）。更新或移除 Token、解除安裝與故障排除：[codex/README.md](codex/README.md)（ZIP 內也附同一份）。
+ZIP 匯入後沒有 MCP 時，可解壓 ZIP，再從「新增外掛市集」填入解壓資料夾的完整路徑並安裝，這個方式也不需要安裝指令。詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)（ZIP 內也附同一份）。
 
 ## Token 注意事項
 
 - Claude Desktop：只在擴充套件設定畫面輸入，由 Claude Desktop 存放在系統憑證儲存區（macOS 鑰匙圈、Windows 認證管理員）；不要貼到 Claude 聊天中。
-- Codex：預設存在本機設定檔（`~/.config/openfun-data/credentials.json`，Windows 為 `%APPDATA%\openfun-data\credentials.json`）。檔案未加密，以檔案權限保護；要刪除請執行 `node ~/openfun-codex-plugin/setup.mjs --remove`。
+- Codex：選擇儲存時存在本機設定檔（`~/.config/openfun-data/credentials.json`，Windows 為 `%APPDATA%\openfun-data\credentials.json`）。檔案未加密，以檔案權限保護；要刪除請執行 `node ~/openfun-codex-plugin/setup.mjs --remove`。
   若選擇在對話中貼 Token，Token 會留在對話紀錄中，建議使用短效 Token，Codex 重新啟動後需重貼。
 
 ## 開發狀態
 
 - Claude Desktop：已可打包 MCPB 與選用的聊天指引 ZIP；macOS／Windows 上的安裝畫面尚未完成實機驗收。
-- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；安裝與 Token 設定需要終端機，桌面 app 的操作尚未驗證。
+- Codex：本機 plugin 已完成，安裝流程已用 Codex CLI 0.159.3 驗證；已驗證桌面版使用的市集安裝後端與 MCP 工具呼叫；ZIP 上傳畫面尚未完成實機驗收。
 - 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
 ## 三個打包檔的差異
@@ -94,7 +77,7 @@ node "$HOME\openfun-codex-plugin\setup.mjs"
 |---|---|---|---|
 | `openfun-claude-extension.mcpb` | Claude Desktop | Settings > Extensions | 真正的查詢功能，含 Token 設定欄位（必要） |
 | `openfun-chat-plugin.zip` | Claude Desktop | Customize > Plugins | 只含聊天指引，不能單獨查資料（可選） |
-| `openfun-codex-plugin.zip` | Codex | 終端機 `codex plugin marketplace add`／`codex plugin add` | 9 個唯讀查詢工具、Token 設定程式（setup.mjs）、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
+| `openfun-codex-plugin.zip` | Codex | 外掛程式 → 新增外掛程式／新增外掛市集 | 9 個唯讀查詢工具、Token 設定程式（setup.mjs）、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
 
 三個檔案不能互換：`.mcpb` 不能上傳到 Customize > Plugins，Claude 的 ZIP 也不能給 Codex 使用。
 

@@ -4,7 +4,7 @@ import { build } from "esbuild";
 import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
-import { COMPAT_MANIFEST, COMPAT_MCP, compatJson, compatManifest, compatMcp } from "./codex-compat.mjs";
+import { ARCHIVE_MANIFEST, COMPAT_MANIFEST, COMPAT_MCP, archiveManifest, compatJson, compatManifest, compatMcp } from "./codex-compat.mjs";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const out = join(root, "build", "bundle");
@@ -88,6 +88,8 @@ for (const rel of CODEX_STATIC) {
 const readCodexJson = (rel) => JSON.parse(readFileSync(join(root, "codex", rel), "utf8"));
 mkdirSync(join(codexOut, dirname(COMPAT_MANIFEST)), { recursive: true });
 writeFileSync(join(codexOut, COMPAT_MANIFEST), compatJson(compatManifest(readCodexJson("plugin.json"))));
+mkdirSync(join(codexOut, dirname(ARCHIVE_MANIFEST)), { recursive: true });
+writeFileSync(join(codexOut, ARCHIVE_MANIFEST), compatJson(archiveManifest(readCodexJson("plugin.json"))));
 writeFileSync(join(codexOut, COMPAT_MCP), compatJson(compatMcp(readCodexJson("mcp.json"))));
 cpSync(join(out, "server", "index.mjs"), join(codexOut, "server", "index.mjs"));
 cpSync(join(out, "THIRD_PARTY_LICENSES.md"), join(codexOut, "THIRD_PARTY_LICENSES.md"));
