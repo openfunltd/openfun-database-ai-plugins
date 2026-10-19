@@ -15,7 +15,7 @@
     "validate": "node scripts/validate-manifest.mjs manifest.json",
     "validate:plugin": "claude plugin validate --strict plugin",
     "validate:codex": "npm run build && node scripts/validate-codex-plugin.mjs build/codex-plugin",
-    "pack": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs && node scripts/pack-codex.mjs",
+    "pack": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs && node scripts/pack-skill.mjs && node scripts/pack-codex.mjs",
     "pack:mcpb": "npm run build && node scripts/pack.mjs",
     "pack:plugin": "node scripts/pack-plugin.mjs",
     "pack:codex": "npm run build && node scripts/pack-codex.mjs",
@@ -24,10 +24,11 @@
     "test:unit": "node --test test/query.test.mjs test/config.test.mjs test/client.test.mjs test/tools.test.mjs test/manifest.test.mjs",
     "test:stdio": "node --test test/stdio.test.mjs",
     "test:package": "node --test test/package.test.mjs",
-    "test:plugin": "node --test test/plugin.test.mjs",
+    "test:plugin": "node --test test/plugin.test.mjs test/skill-package.test.mjs",
     "test:codex": "node --test test/runtime.test.mjs test/chat-token.test.mjs test/codex-validate.test.mjs test/codex.test.mjs test/codex-model-tools.test.mjs",
     "icon": "node scripts/make-icon.mjs",
-    "pack:claude": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs"
+    "pack:claude": "npm run build && node scripts/pack.mjs && node scripts/pack-plugin.mjs && node scripts/pack-skill.mjs",
+    "pack:skill": "node scripts/pack-skill.mjs"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "1.32.0",

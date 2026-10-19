@@ -15,7 +15,8 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 | 平台 | 下載 | 下載後怎麼用 |
 |---|---|---|
 | Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) | 雙擊安裝，在擴充套件設定填入 Token |
-| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) | 保留 ZIP，在 Claude 的 Customize > Plugins 上傳，詳見下方說明 |
+| Claude Desktop（可選技能指引） | [openfun-chat-skill.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-skill.zip) | 保留 ZIP，在 Customize > Skills 上傳 |
+| Claude Desktop（外掛格式的同一份指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) | 只給 Customize > Plugins 上傳，不能上傳到 Skills |
 | Codex（供更新連線程式使用） | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) | 交給 Codex 更新本機連線程式；首次安裝依下方市集步驟操作 |
 
 完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>
@@ -25,7 +26,7 @@ Claude 請下載上面的安裝檔，不要使用 GitHub 自動產生的「Sourc
 
 | | Claude Desktop | Codex |
 |---|---|---|
-| 安裝來源 | `openfun-claude-extension.mcpb`（必要）＋ `openfun-chat-plugin.zip`（可選指引） | GitHub 市集的 `codex-marketplace` 分支 |
+| 安裝來源 | `openfun-claude-extension.mcpb`（必要）；聊天指引可選 Skill 或 Plugin，擇一即可 | GitHub 市集的 `codex-marketplace` 分支 |
 | 安裝方式 | 雙擊或在設定畫面安裝 | 新增 GitHub 市集 |
 | 需要 Node.js | 不需要 | 需要 18 以上 |
 | Token 設定 | 擴充套件設定畫面的欄位 | 「外掛程式」→「MCP」標籤頁的環境變數欄位；也可用對話 |
@@ -41,10 +42,18 @@ Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取
 
 1. 雙擊 `openfun-claude-extension.mcpb`（或拖曳到 Claude Desktop 視窗，或從 **Settings > Extensions > Advanced settings > Install Extension…** 選擇）。
 2. 按 **Install**，在「歐噴 API Token」欄位貼上 Token，儲存並確認已啟用。
-3. （可選）安裝 `openfun-chat-plugin.zip` 聊天使用指引，操作見下方小節。**完成前兩步就能查資料**。
+3. （可選）下載 `openfun-chat-skill.zip`，到 **Customize > Skills** 上傳聊天指引，操作見下方小節。**完成前兩步就能查資料**。
 4. 開新聊天，問：「請檢查歐噴資料庫的設定是否正常」。
 
 逐步教學、聊天示範、故障排除與隱私說明：[docs/CLAUDE_DESKTOP.md](docs/CLAUDE_DESKTOP.md)。
+
+### 上傳到「技能」：請用 openfun-chat-skill.zip
+
+1. 下載上方的 `openfun-chat-skill.zip`，**保留 ZIP，不要解壓縮**。
+2. 開啟 **Customize（自訂）> Skills（技能）>「+」> Create skill（建立技能）> Upload a skill（上傳技能）**，選取這份 ZIP。
+3. 啟用 `openfun-data`，開新聊天，問：「請檢查歐噴資料庫的設定是否正常」。
+
+這份指引與下面的 Plugin 內容相同，**擇一安裝即可**。若出現「A skill cannot contain a plugin manifest」或 `SKILL.md` 層級錯誤，表示傳入了 Plugin ZIP，請改用 **`openfun-chat-skill.zip`**。格式與操作依 [Claude 官方技能文件](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)、[上傳技能教學](https://support.claude.com/en/articles/12512180-use-skills-in-claude)。
 
 ### openfun-chat-plugin.zip 下載後怎麼用？
 
@@ -55,7 +64,7 @@ Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取
 3. 安裝後確認「**歐噴資料庫聊天指引**」已啟用。
 4. 開新聊天，直接提問；若要手動選用指引，在輸入框輸入 `/`，從清單選取歐噴的 `openfun-data` 指引。確認連線可問：「請檢查歐噴資料庫的設定是否正常」。
 
-ZIP 請上傳到 **Plugins**，不要當作聊天附件，也不要裝到 **Settings > Extensions**。Plugins 需 Claude 付費方案；安裝及選用指引的操作可參考 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
+這份 **Plugin ZIP 只能上傳到 Plugins，不能上傳到 Skills**，也不要當作聊天附件或裝到 Settings > Extensions。Plugins 需 Claude 付費方案；安裝及選用指引的操作可參考 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
 
 ## Codex 安裝
 
@@ -111,15 +120,16 @@ Excel 固定包含「查詢結果」及「來源與處理說明」兩個工作�
 - Codex：macOS 15.7.7、Codex 26.930.51102 已由使用者實測，以獨立本機 MCP 完成 Token 檢查與資料查詢。請依 [Codex 說明](codex/README.md) 完成必要的連線設定。外掛附帶 MCP 的工具載入問題仍待確認；Windows 尚未實機驗收。
 - 目前發布的是 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)；沒有部署額外的連線服務。
 
-## 三個打包檔的差異
+## 打包檔的差異
 
 | 檔案 | 給誰用 | 使用位置 | 用途 |
 |---|---|---|---|
 | `openfun-claude-extension.mcpb` | Claude Desktop | Settings > Extensions | 真正的查詢功能，含 Token 設定欄位（必要） |
-| `openfun-chat-plugin.zip` | Claude Desktop | Customize > Plugins | 只含聊天指引，不能單獨查資料（可選） |
+| `openfun-chat-skill.zip` | Claude Desktop | Customize > Skills | 聊天指引，不能單獨查資料（可選，與 Plugin 擇一） |
+| `openfun-chat-plugin.zip` | Claude Desktop | Customize > Plugins | 同一份指引的 Plugin 格式，不能上傳到 Skills（可選） |
 | `openfun-codex-plugin.zip` | Codex | 更新本機連線程式用；安裝請新增 GitHub 市集 | 9 個唯讀查詢工具、3 個 Excel 匯出工具、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
 
-三個檔案不能互換：`.mcpb` 不能上傳到 Customize > Plugins，Claude 的 ZIP 也不能給 Codex 使用。
+檔案不能互換：MCPB 裝到 Extensions、Skill ZIP 上傳到 Skills、Plugin ZIP 上傳到 Plugins；Claude 的 ZIP 也不能給 Codex 使用。
 
 ## 原始碼與打包
 
@@ -129,11 +139,11 @@ Excel 固定包含「查詢結果」及「來源與處理說明」兩個工作�
 
 | 指令 | 輸出到 `dist/` |
 |---|---|
-| `npm run pack:claude` | `openfun-claude-extension.mcpb`、`openfun-chat-plugin.zip`（選用指引） |
+| `npm run pack:claude` | `openfun-claude-extension.mcpb`、`openfun-chat-skill.zip`、`openfun-chat-plugin.zip`（後兩者為同一指引的不同格式，擇一） |
 | `npm run pack:codex` | `openfun-codex-plugin.zip` |
 | `npm run pack` | 上述全部檔案 |
 
-打包入口分別為 `scripts/pack.mjs`、`scripts/pack-plugin.mjs` 和 `scripts/pack-codex.mjs`。`npm test` 會重新打包並驗證產物；開發環境需求與測試限制見 [開發說明](DEVELOPMENT.md)。`dist/` 與 `build/` 是產生檔，不提交到 Git。
+打包入口分別為 `scripts/pack.mjs`、`scripts/pack-skill.mjs`、`scripts/pack-plugin.mjs` 和 `scripts/pack-codex.mjs`。`npm test` 會重新打包並驗證產物；開發環境需求與測試限制見 [開發說明](DEVELOPMENT.md)。`dist/` 與 `build/` 是產生檔，不提交到 Git。
 
 ---
 

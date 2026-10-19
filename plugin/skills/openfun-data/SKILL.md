@@ -1,6 +1,6 @@
 ---
 name: openfun-data
-description: 當使用者想查台灣公共資料或政府開放資料時使用，例如公司稅籍登記與統一編號、選舉與候選人得票、政府採購標案、立法院議事、法規、政府機關或行政區代碼，或提到「歐噴」「openfun」「data.openfun.tw」，想查某公司／機關／人物出現在哪些資料、要列出記錄、算筆數、分組統計或完整匯出 Excel 時。
+description: 當使用者想查台灣公共資料、政府開放資料，或提到「歐噴」「openfun」「data.openfun.tw」，要搜尋資料集、查公司／機關／人物記錄、依條件篩選、查筆數、分組統計、檢查連線或完整匯出 Excel 時使用。
 ---
 
 # 歐噴資料庫查詢
@@ -14,7 +14,7 @@ description: 當使用者想查台灣公共資料或政府開放資料時使用�
 Excel 匯出工具：`openfun_export_excel`、`openfun_export_status`、`openfun_cancel_export`。
 
 如果看不到這些工具，不要假裝已連線或憑記憶編資料。簡短告訴使用者：
-1. 在 Claude Desktop 的 Settings > Extensions 安裝 `openfun-claude-extension.mcpb`（這個 plugin 本身不含查詢功能）。
+1. 在 Claude Desktop 的 Settings > Extensions 安裝 `openfun-claude-extension.mcpb`（這份指引本身不含查詢功能）。
 2. 在該擴充套件的設定中貼上到 https://data.openfun.tw/user 建立的 API Token。
 3. 確認聊天輸入框「+」> Connectors 裡「歐噴資料庫」是啟用的，再開新聊天。
 

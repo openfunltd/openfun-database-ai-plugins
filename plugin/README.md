@@ -4,14 +4,20 @@
 
 **真正負責連線查詢的是 `openfun-claude-extension.mcpb`。只裝 MCPB 就能查資料，這份 ZIP 是可選的補充指引，不能單獨查資料，也沒有 Token 設定欄位。**
 
-## 下載後怎麼用
+## 如果你是在「技能（Skills）」上傳
+
+請改下載 [openfun-chat-skill.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-skill.zip)，在 **Customize > Skills >「+」> Create skill > Upload a skill** 上傳。不要解壓縮。Skill 與這份 Plugin 使用同一份指引，擇一即可。
+
+若看到「A skill cannot contain a plugin manifest」或 `SKILL.md` 層級錯誤，表示把 Plugin 傳到了技能入口，請換成上面的 Skill ZIP。
+
+## 在「外掛程式（Plugins）」上傳
 
 1. 保留 `openfun-chat-plugin.zip`，**不要解壓縮**。
 2. 在 Claude Desktop 左側開啟 **Customize（自訂）> Plugins（外掛程式）**，按 **Add（新增）> Upload plugin（上傳外掛程式）**，上傳這份 ZIP。
 3. 確認「**歐噴資料庫聊天指引**」已啟用。
 4. 開新聊天，直接提問；也可以在輸入框輸入 `/`，從清單選取歐噴的 `openfun-data` 指引，再輸入問題。
 
-ZIP 請上傳到 Plugins，不要當作聊天附件，也不要裝到 Settings > Extensions。Plugins 需 Claude 付費方案；操作依 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
+這份 Plugin ZIP 只能上傳到 Plugins，不能上傳到 Skills，不要當作聊天附件，也不要裝到 Settings > Extensions。Plugins 需 Claude 付費方案；操作依 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
 
 ## 查詢功能與 Token 設定（必要）
 

@@ -8,12 +8,13 @@
 - 查詢不會修改歐噴資料；Excel 匯出會寫入本機下載資料夾
 - 支援 **Claude Desktop for macOS 與 Windows**（Claude Desktop 沒有 Linux 版）
 
-## 兩個檔案，用途不同
+## 查詢程式與聊天指引，用途不同
 
 | 檔案 | 安裝位置 | 用途 |
 |---|---|---|
 | `openfun-claude-extension.mcpb` | **Settings > Extensions** | **真正的查詢功能**；Token 只在這裡設定一次（**必要**） |
-| `openfun-chat-plugin.zip` | **Customize > Plugins** 上傳 | 補充聊天使用指引；只裝 MCPB 也能查資料（可選） |
+| `openfun-chat-skill.zip` | **Customize > Skills** 上傳 | 補充聊天指引（可選，與 Plugin 擇一） |
+| `openfun-chat-plugin.zip` | **Customize > Plugins** 上傳 | 同一份指引的外掛格式；不能上傳到 Skills（可選） |
 
 - 只裝 `openfun-chat-plugin.zip` **不能查資料**：plugin 裡的本機 MCP 工具只在 Cowork 與 Claude Code 執行，一般聊天不會啟動，所以這份 plugin 刻意只放指引，不含查詢程式，也沒有 Token 欄位。
 - 把 `.mcpb` 上傳到 Customize > Plugins 會出現「The archive must contain a .claude-plugin/plugin.json manifest…」錯誤，因為 `.mcpb` 是擴充套件，不是 plugin。請改到 Settings > Extensions 安裝（見第 3 步）。
@@ -26,7 +27,7 @@
 ## 1. 準備
 
 1. 安裝並登入 [Claude Desktop](https://claude.ai/download)（macOS 或 Windows），建議更新到最新版。
-2. 下載安裝檔 [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb)（必要）與 [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip)（可選），完整發布頁見 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)。請直接下載這兩個檔案，不要使用 GitHub 自動產生的「Source code (zip)」。
+2. 下載安裝檔 [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb)（必要）。補充聊天指引可選 [openfun-chat-skill.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-skill.zip)（Skills 格式）或 [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip)（Plugins 格式），擇一即可，完整發布頁見 [v0.1.0 測試版](https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0)。請下載上述安裝檔，不要使用 GitHub 自動產生的「Source code (zip)」。
 
 ## 2. 取得歐噴 API Token
 
@@ -56,7 +57,17 @@
 
 Token 會由 Claude Desktop 加密存放在系統的憑證儲存區（macOS「鑰匙圈」、Windows「認證管理員」）。
 
-## 3b.（可選）安裝 openfun-chat-plugin.zip 聊天指引
+## 3b.（可選）在「技能」安裝聊天指引
+
+1. 下載 `openfun-chat-skill.zip`，**保留 ZIP，不要解壓縮**。
+2. 開啟 **Customize（自訂）> Skills（技能）>「+」> Create skill（建立技能）> Upload a skill（上傳技能）**，選取這份 ZIP。
+3. 啟用 `openfun-data`，開新聊天，問：「請檢查歐噴資料庫的設定是否正常」。
+
+這份 Skill 與下面的 Plugin 使用同一份指引，擇一安裝即可。若看不到 Skills，依 [官方說明](https://support.claude.com/en/articles/12512180-use-skills-in-claude) 啟用 Code execution and file creation（程式碼執行與檔案建立）；公司帳號依管理員設定。
+
+若上傳時看到「A skill cannot contain a plugin manifest」或 `SKILL.md` 層級錯誤，請確認選的是 **`openfun-chat-skill.zip`**。Skill ZIP 只有 `openfun-data` 一個頂層資料夾，直接包含 `SKILL.md`，不含 Plugin manifest；結構依 [Claude 官方技能規範](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)。
+
+## 3c.（可選，與 Skill 擇一）在「外掛程式」安裝指引
 
 這份 ZIP 教 Claude 何時使用歐噴工具、先確認欄位再查詢、附上來源與說明限制，以及如何使用 Excel 匯出。**第 3 步的 `.mcpb` 已包含查詢工具與使用說明，只安裝它就能查資料；ZIP 是補充指引，不能單獨查詢，也不需要填 Token。**
 
@@ -65,7 +76,7 @@ Token 會由 Claude Desktop 加密存放在系統的憑證儲存區（macOS「�
 3. 確認「**歐噴資料庫聊天指引**」已啟用。
 4. 開新聊天，直接提問；也可以在輸入框輸入 `/`，從清單選取歐噴的 `openfun-data` 指引，再輸入問題。
 
-這份 ZIP 請上傳到 **Plugins**，不要當作聊天附件，也不要裝到 **Settings > Extensions**。Plugins 需 Claude 付費方案；操作依 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
+這份 **Plugin ZIP 只能上傳到 Plugins，不能上傳到 Skills**，也不要當作聊天附件或裝到 Settings > Extensions。Plugins 需 Claude 付費方案；操作依 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
 
 如果 Claude 說找不到歐噴資料庫的工具，請檢查第 3 步的擴充套件是否啟用，以及聊天的「+」> Connectors 中是否開啟「歐噴資料庫」。只有 Token 驗證成功，才算確認能查資料。
 
