@@ -52,7 +52,9 @@ npm run icon        # 重新產生 icon.png
 manifest.json          MCPB manifest（v0.3，user_config 只有 api_token）
 src/index.ts           stdio 進入點
 src/server.ts          McpServer 與 instructions
-src/tools.ts           9 個唯讀工具；Codex 另註冊 openfun_set_token／openfun_clear_token
+src/tools.ts           9 個唯讀查詢、3 個 Excel 匯出工具；Codex 另註冊 2 個 Token 工具
+src/export.ts          背景分頁匯出、完整性檢查與本機檔案交付
+src/xlsx.ts            固定格式 OOXML 工作簿產生器
 src/session.ts         執行中的 Token 狀態：每次工具呼叫取一份不可變快照（client＋schema 快取），對話 Token 的驗證、取代與清除
 src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨 redirect、逾時與大小上限、錯誤分類
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
@@ -147,7 +149,7 @@ OPENFUN_API_TOKEN=xxx npx @modelcontextprotocol/inspector node build/bundle/serv
 ### 對話工具驗證
 
 `test/codex-model-tools.test.mjs` 以實際 Codex app-server、隔離的家目錄與本機模擬模型，從打包 ZIP
-啟動選取的外掛，送出對話並執行 `functions.exec`：確認 `ALL_TOOLS` 有 11 個歐噴工具，再實際呼叫
+啟動選取的外掛，送出對話並執行 `functions.exec`：確認 `ALL_TOOLS` 有 14 個歐噴工具，再實際呼叫
 `openfun_check_config`。不使用真實模型、帳號或 Token。
 
 測試也驗證兩種限制：`features.code_mode.excluded_tool_namespaces` 排除歐噴 namespace 時，
@@ -158,7 +160,7 @@ MCP 工具清單仍有 11 個，對話的 `ALL_TOOLS` 卻是 0；plugin 的 `ena
 
 目前使用者安裝流程將 `openfun-local` 列為必要的連線設定，測試也驗證此載入路徑：保留外掛，將其 `server/index.mjs` 與授權檔複製到獨立資料夾，
 以 `[mcp_servers.openfun-local]` 啟動同一支程式（`--host=codex`），並只停用外掛附帶的 MCP。
-實際對話仍能取得 11 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
+實際對話仍能取得 14 個工具並呼叫設定檢查，不會同時暴露兩組歐噴工具。此路徑符合
 [官方本機 MCP 設定方式](https://learn.chatgpt.com/docs/extend/mcp)，可用來區分外掛 MCP 與獨立 MCP 的載入差異；
 使用者已於 2026-10-06 在 macOS 15.7.7（24G720）、Codex 26.930.51102 回報此本機連線方式成功：
 `openfun-local` 可呼叫，`openfun_check_config` 回報 Token 有效，並完成「開放文化基金會」的搜尋與記錄查詢，
@@ -187,7 +189,7 @@ app-server 啟動的程序為 `node <快取>/server/index.mjs --host=codex`，cw
 env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.path` 為 `./`（Codex 允許 marketplace 根目錄即 plugin）。
 
 `test/codex-compat.test.mjs` 使用真正的 `codex exec-server` 驗證探索入口前後差異，並在隔離環境移除 portable 入口，
-驗證相容入口能安裝、啟動 MCP、提供 11 個工具與呼叫 `openfun_check_config`。兩種入口同時存在時只啟動一個 server、
+驗證相容入口能安裝、啟動 MCP、提供 14 個工具與呼叫 `openfun_check_config`。兩種入口同時存在時只啟動一個 server、
 技能只載入一次。這些測試使用 Codex CLI 0.159.3，不代表舊版本或桌面 app 畫面已驗收。
 
 ### Token
@@ -198,7 +200,7 @@ env 只有 HOME、PATH、PLUGIN_ROOT、PLUGIN_DATA。marketplace 的 `source.pat
 `test/runtime.test.mjs` 及實際 Codex 對話測試驗證：即使保留合法舊 Token 檔也不載入，
 MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄、本機模擬 API 與假 Token。
 
-選用的對話設定（只有 `--host=codex` 時註冊，Claude Desktop 維持 9 個工具與 user_config）：
+選用的對話設定（只有 `--host=codex` 時註冊，Claude Desktop 為 12 個工具並沿用 user_config）：
 
 - `openfun_set_token`：使用者明確選擇對話方式或主動貼出 Token 時由 Codex 呼叫。先用 `checkToken` 檢查格式，再以候選 Token 呼叫固定的
   `GET /api/v1/me`（同一個 client：固定 base URL、不跟隨 redirect）；成功才取代，失敗保留原狀態（含 schema 快取）。
@@ -216,7 +218,7 @@ MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄
 - 所有 Codex CLI 都在子程序中以暫存 `CODEX_HOME`、`HOME` 執行，並檢查真實 `~/.codex/config.toml` 未變動。
   不送出對話 turn，不需要 API Key。
 - 透過 Codex app-server 的 `mcpServerStatus/list`、`thread/start`、`mcpServer/tool/call` 讓 Codex 自己啟動並呼叫 server；
-  確認列出 11 個工具，只呼叫不需要網路的情境（未設定、權限過寬、Token 不合法、格式錯誤的 `openfun_set_token`、`openfun_clear_token`）。
+  確認列出 14 個工具，只呼叫不需要網路的情境（未設定、權限過寬、Token 不合法、格式錯誤的 `openfun_set_token`、`openfun_clear_token`）。
 - 有合法格式 Token 時，不經 Codex 呼叫會連網的工具（避免打正式站），改從 `/proc` 讀取 Codex 實際啟動的
   argv／cwd／env，原樣重跑並只加上指向本機 mock 的 `OPENFUN_DEV_BASE_URL`。此部分只在 Linux 執行。
 - `test/chat-token.test.mjs`：對話 Token 的設定／拒絕／清除／快取／並行遮蔽，以及打包後 server 的原始 stdout／stderr 與檔案系統檢查；
@@ -238,10 +240,25 @@ MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄
 
 ZIP 根目錄含 `.claude-plugin/plugin.json`，對應桌面版曾回報「archive must contain .claude-plugin/plugin.json or top-level SKILL.md」的匯入器格式。此檔案從同一份 portable manifest 產生，移除 Codex 專用 interface，仍宣告 `skills` 與 `.mcp.json`；不建立第二套 MCP。
 
-`test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 11 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI。使用者文件只提供 GitHub 市集安裝步驟；ZIP 保留供打包、測試及更新連線程式使用。
+`test/codex-compat.test.mjs` 另移除 portable／Codex manifest，實際透過 app-server 的 `marketplace/add`、`plugin/install` 安裝此入口，確認 14 個工具與 `openfun_check_config` 可呼叫。這驗證本機市集與 MCP 後端，不代表已操作桌面版 ZIP 上傳 UI。使用者文件只提供 GitHub 市集安裝步驟；ZIP 保留供打包、測試及更新連線程式使用。
 
 ### 發布 GitHub 市集
 
 `npm run publish:codex-marketplace` 先由共用原始碼打包，再把 ZIP 的完整內容發布到 `codex-marketplace` 分支；`main` 保留原始碼，不把安裝包編譯產物混入。腳本要求原始碼已提交，驗證 plugin 後才推送，發布 commit 記錄來源 SHA。此指令供維護者使用，使用者只需在桌面版新增 GitHub 市集並指定此分支。
 
 Codex ZIP entry 固定標記為 Unix 一般檔案 `0100644`，不只存權限位元。`test/codex.test.mjs` 使用 Python 標準 ZIP reader 獨立檢查檔案類型與完整性；尚不能據此判定已解決桌面版的一般上傳錯誤。
+
+
+## 背景 Excel 匯出
+
+`src/export.ts` 沿用 `TokenSession` 的快照與既有 GET client，提供 `openfun_export_excel`、`openfun_export_status`、`openfun_cancel_export`。開始與取消的 `readOnlyHint=false`，因為有本機檔案／工作狀態副作用；資料庫仍只使用 GET。Claude 現有 9 個查詢工具加 3 個匯出工具；Codex 另加 2 個 Token 工具，共 14 個。工作先回 ID，再由短輪詢取得進度，避免一次工具呼叫等待所有分頁。
+
+資料使用唯一識別欄位排序、每頁 100 筆循序擷取；每次核對 total、page、per_page、應有頁面筆數與唯一 ID，結束時再核對第一筆、總數、schema 與 last_updated_at。要求的輸出排序在本機完成，避免分頁排序同值不穩定及 API 排序方向差異影響輸出。這些核對不是資料庫強一致性快照；同筆數且未更新 metadata 的併行變動仍無法完全排除，檔案有明確說明。
+
+每次上限 10000 筆、200 欄、32 MiB 已選欄位 JSON；工作不會為繞過 API 上限而自動拆分條件。network／timeout／server_error 最多重試同頁 2 次；429／額度／權限／驗證錯誤不自動重試。失敗或取消不輸出部分 Excel。Token 改變或清除後不再取新頁，舊工作狀態與資源不可由新 Token 讀取；工作歷史只存在本程序記憶體，重啟需重做。最多一項進行中工作、保留 20 項記憶體歷史。
+
+`src/xlsx.ts` 只產生固定 OOXML 工作簿（查詢結果、來源與處理說明），使用既有 `fflate` 0.8.3（改列 production dependency 並內嵌授權），沒有新增通用試算表套件。inlineStr 保留識別碼、日期與公式樣式文字，schema 數值欄保留數字；超出 Excel 精度時以文字保存。非法／過長儲存格會停止，不靜默截斷。數字在 JS 已不安全時拒絕匯出，不宣稱可還原 API 已失去的精度。
+
+檔案由本機 server 寫到家目錄 Downloads/OpenFun，獨立隨機名稱、目錄 0700／檔案 0600，不接受任意輸出路徑；臨時檔以 exclusive 建立，完成後用 hard link 發布避免覆寫，並清理臨時檔。資源連結為 file URI；resources/read 只允許目前 Token、本程序完成的確切檔案，核對大小與 SHA-256、拒絕 symbolic link，不能讀任意路徑。此資源是本機檔案，不能假裝為雲端附件或公開下載網址。
+
+`test/export.test.mjs` 使用 9224 筆／93 頁 mock 資料，獨立 Python ZIP/XML reader 核對完整順序、識別碼與兩工作表，測試重試、缺頁、重複、總數漂移、超限、取消、Token 清除與公式樣式字串。`test/export-host.test.mjs` 實際啟動兩份打包程式，驗證本機交付與 resources/read；另以真實 Codex app-server 呼叫工具，確認完成路徑與 resource_link。全部使用隔離家目錄及假 Token。這不等於已操作 macOS／Windows GUI；點擊檔案連結的實機驗收仍待完成，本機下載資料夾為保底交付。

@@ -46,8 +46,9 @@ const QUERY_TOOLS = [
   "openfun_search",
 ];
 // Codex 另有兩個對話 Token 管理工具（Claude Desktop 只有上面 9 個）
+const EXPORT_TOOLS = ["openfun_cancel_export", "openfun_export_excel", "openfun_export_status"];
 const TOKEN_TOOLS = ["openfun_clear_token", "openfun_set_token"];
-const TOOLS = [...QUERY_TOOLS, ...TOKEN_TOOLS].sort();
+const TOOLS = [...QUERY_TOOLS, ...EXPORT_TOOLS, ...TOKEN_TOOLS].sort();
 const PROMPT = "請到歐噴建立短效 Token，再貼到這個對話。Token 會留在對話與工具呼叫紀錄中；不要分享此對話，用完可到歐噴撤銷。";
 const VERSION = JSON.parse(readFileSync(join(root, "package.json"), "utf8")).version;
 // 假 Token（mock 只接受 helpers/mock-api.mjs 的 GOOD_TOKEN；這裡另外檢查 header 內容即可）
@@ -174,13 +175,13 @@ function findServerProcess(app) {
 
 const callText = (r) => r.content.map((c) => c.text).join("\n");
 
-test("Codex app-server：從快取啟動 server，11 個工具，提示畫面環境變數與選用對話 Token；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
+test("Codex app-server：從快取啟動 server，14 個工具，提示畫面環境變數與選用對話 Token；Token 工具不連網的路徑", { skip: linuxOnly }, async () => {
   await withCodex(async ({ app, status, threadId }) => {
     assert.equal(status.pluginId, "openfun-data@openfun");
     assert.equal(status.serverInfo.name, "openfun-data");
     assert.deepEqual(Object.keys(status.tools).sort(), TOOLS);
     for (const [name, t] of Object.entries(status.tools)) {
-      assert.equal(t.annotations.readOnlyHint, !TOKEN_TOOLS.includes(name), `${name} readOnlyHint`);
+      assert.equal(t.annotations.readOnlyHint, !TOKEN_TOOLS.includes(name) && !["openfun_export_excel", "openfun_cancel_export"].includes(name), `${name} readOnlyHint`);
     }
 
     const proc = findServerProcess(app);

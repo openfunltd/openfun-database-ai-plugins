@@ -31,7 +31,7 @@ export const CLAUDE_DESKTOP_HOST: HostProfile = {
   updateHint:
     "請到 https://data.openfun.tw/user 確認或重新建立一般 API Token，然後在 Claude Desktop「設定 > 擴充功能」更新本擴充套件的 Token。",
   emptyReason: "擴充套件設定中的「歐噴 API Token」是空的。",
-  guideTokenNote: `這個擴充套件只提供唯讀查詢。Token 已由使用者在 Claude Desktop 的擴充套件設定中提供，
+  guideTokenNote: `這個擴充套件的資料查詢為唯讀；Excel 匯出會寫入本機下載資料夾。Token 已由使用者在 Claude Desktop 的擴充套件設定中提供，
 請不要在聊天中向使用者索取 Token，也不要要求使用者使用終端機、curl 或 Device Authorization 流程。`,
   instructionsTokenNote: "Token 已在擴充套件設定中，不要在聊天中索取。",
 };

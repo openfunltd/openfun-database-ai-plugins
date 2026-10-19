@@ -6,3 +6,5 @@
 - 設定：貼上在 https://data.openfun.tw/user 建立的 API Token。
 - 內容：server/index.mjs（已內嵌所有依賴，由 Claude Desktop 內建 Node.js 執行）、manifest.json、icon.png。
 - 第三方授權：THIRD_PARTY_LICENSES.md；本套件授權：LICENSE。
+
+- Excel 匯出：可說「把符合條件的全部資料匯出成 Excel，附上來源與查詢條件」。檔案存入本機家目錄 Downloads/OpenFun（下載／OpenFun）；連結無法點開時，可直接從該資料夾開啟。每次最多 10,000 筆，核對失敗不產生完整檔；圖形介面仍待實機驗收。

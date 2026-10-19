@@ -26,7 +26,7 @@ export async function runStdioLifecycle({ command = process.execPath, args, cwd,
     assert.match(info.version, /^\d+\.\d+\.\d+/);
     assert.match(client.getInstructions() ?? "", /openfun_guide/);
     const { tools } = await client.listTools();
-    assert.equal(tools.length, 9);
+    assert.equal(tools.length, 12);
 
     const search = await client.callTool({ name: "openfun_search", arguments: { query: "公司" } });
     assert.equal(search.isError, undefined);

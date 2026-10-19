@@ -2,7 +2,7 @@
 // 1. `codex exec-server --listen stdio` 的 capabilityRoots/discoverV1（executor 端 capability discovery）
 //    只認 .codex-plugin/ 等路徑：有相容入口才找得到 plugin 與 MCP 設定；拿掉相容入口（舊包）時找不到。
 // 2. 拿掉 portable 入口（root plugin.json、mcp.json），讓 Codex 只能走 legacy manifest／.mcp.json：
-//    實際安裝、由 app-server 啟動 server，列出 11 個工具，openfun_check_config 回報尚未設定。
+//    實際安裝、由 app-server 啟動 server，列出 14 個工具，openfun_check_config 回報尚未設定。
 // 只在隔離 CODEX_HOME／HOME 中執行；不含 Token、不連正式 API、不送出模型對話。
 // 限制：只驗證本機的 Codex CLI 版本，不代表任何較舊版本或桌面 app 介面的行為。
 import { test, after } from "node:test";
@@ -19,8 +19,11 @@ const root = fileURLToPath(new URL("..", import.meta.url));
 const zipFile = join(root, "dist", "openfun-codex-plugin.zip");
 const TOOLS = [
   "openfun_aggregate",
+  "openfun_cancel_export",
   "openfun_check_config",
   "openfun_clear_token",
+  "openfun_export_excel",
+  "openfun_export_status",
   "openfun_get_dataset",
   "openfun_get_record",
   "openfun_get_skill",
@@ -90,7 +93,7 @@ const callText = (r) => r.content.map((c) => c.text).join("\n");
 
 // 使用桌面 app 的公開 backend API 安裝；不經 codex plugin CLI。
 // 另移除 portable／Codex manifest，驗證封存檔相容入口本身仍有 MCP，避免只成功匯入 skill。
-test("封存檔相容入口：app-server 市集安裝後能列出 11 個工具並呼叫設定檢查", { skip }, async () => {
+test("封存檔相容入口：app-server 市集安裝後能列出 14 個工具並呼叫設定檢查", { skip }, async () => {
   const { pluginDir, env } = fixture(["plugin.json", "mcp.json", ".codex-plugin"]);
   const { found, uri } = await discover(["plugin.json", "mcp.json", ".codex-plugin"]);
   assert.equal(found.plugin?.manifest.path, `${uri}/.claude-plugin/plugin.json`);
@@ -120,7 +123,7 @@ test("封存檔相容入口：app-server 市集安裝後能列出 11 個工具�
   }
 });
 
-test("legacy 入口：只有 .codex-plugin/plugin.json 與 .mcp.json 時，Codex 實際安裝、啟動一個 server、11 個工具、未設定 Token 的回覆", { skip: linuxOnly }, async () => {
+test("legacy 入口：只有 .codex-plugin/plugin.json 與 .mcp.json 時，Codex 實際安裝、啟動一個 server、14 個工具、未設定 Token 的回覆", { skip: linuxOnly }, async () => {
   const { pluginDir, codexHome, userHome, env } = fixture(["plugin.json", "mcp.json", ".claude-plugin"]);
   const codex = (args) => {
     const r = spawnSync("codex", [...args, "--json"], { env, encoding: "utf8", timeout: 120_000 });

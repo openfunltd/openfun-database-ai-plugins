@@ -10,7 +10,7 @@ export const SERVER_VERSION = VERSION;
 
 export function createServer(
   config: RuntimeConfig,
-  opts: { fetchImpl?: typeof fetch; host?: HostProfile; tokenSource?: TokenSource } = {},
+  opts: { fetchImpl?: typeof fetch; host?: HostProfile; tokenSource?: TokenSource; exportDirectory?: string; exportRetryDelayMs?: number } = {},
 ): McpServer {
   const host = opts.host ?? CLAUDE_DESKTOP_HOST;
   const session = new TokenSession(
@@ -21,6 +21,6 @@ export function createServer(
     { name: SERVER_NAME, title: "歐噴資料庫", version: SERVER_VERSION },
     { instructions: serverInstructions(host), capabilities: { tools: {} } },
   );
-  registerTools(server, session);
+  registerTools(server, session, { exportDirectory: opts.exportDirectory, exportRetryDelayMs: opts.exportRetryDelayMs });
   return server;
 }

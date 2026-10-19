@@ -145,10 +145,10 @@ async function runProbe({ excluded = false, emptyAllowlist = false, standalone =
   }
 }
 
-test("Codex 對話：ALL_TOOLS 包含 11 個歐噴工具，並能實際呼叫 check_config", { skip }, async () => {
+test("Codex 對話：ALL_TOOLS 包含 14 個歐噴工具，並能實際呼叫 check_config", { skip }, async () => {
   const result = await runProbe();
-  assert.equal(result.mcpCount, 11);
-  assert.equal(result.count, 11);
+  assert.equal(result.mcpCount, 14);
+  assert.equal(result.count, 14);
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
   assert.ok(call, "應取得真實 MCP 的回傳結果");
   const config = JSON.parse(call.text);
@@ -156,9 +156,9 @@ test("Codex 對話：ALL_TOOLS 包含 11 個歐噴工具，並能實際呼叫 ch
   assert.match(config.content[0].text, /尚未設定可用的歐噴 API Token/);
 });
 
-test("Codex 對話：namespace 排除時 MCP 仍有 11 個工具，但 ALL_TOOLS 為 0", { skip }, async () => {
+test("Codex 對話：namespace 排除時 MCP 仍有 14 個工具，但 ALL_TOOLS 為 0", { skip }, async () => {
   const result = await runProbe({ excluded: true });
-  assert.equal(result.mcpCount, 11);
+  assert.equal(result.mcpCount, 14);
   assert.equal(result.count, 0);
   assert.equal(result.output.some((item) => item.text?.startsWith('{"content":')), false);
 });
@@ -169,10 +169,10 @@ test("Codex 對話：plugin enabled_tools 空白名單時 MCP 與 ALL_TOOLS 都�
   assert.equal(result.count, 0);
 });
 
-test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，仍有 11 個工具且能呼叫", { skip }, async () => {
+test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，仍有 14 個工具且能呼叫", { skip }, async () => {
   const result = await runProbe({ standalone: true });
-  assert.equal(result.mcpCount, 11);
-  assert.equal(result.count, 11, "應只有獨立 MCP 的工具，避免同時啟動兩組歐噴工具");
+  assert.equal(result.mcpCount, 14);
+  assert.equal(result.count, 14, "應只有獨立 MCP 的工具，避免同時啟動兩組歐噴工具");
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
   assert.ok(call);
   assert.match(JSON.parse(call.text).content[0].text, /尚未設定可用的歐噴 API Token/);
@@ -180,7 +180,7 @@ test("Codex 對話：停用外掛 MCP、改用同一程式的獨立本機 MCP，
 
 test("Codex 對話：MCP 畫面環境變數 Token 可驗證，不回顯且不使用舊 Token 檔", { skip }, async () => {
   const result = await runProbe({ standalone: true, guiToken: true });
-  assert.equal(result.count, 11);
+  assert.equal(result.count, 14);
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
   assert.ok(call);
   const config = JSON.parse(call.text);
@@ -191,7 +191,7 @@ test("Codex 對話：MCP 畫面環境變數 Token 可驗證，不回顯且不使
 
 test("Codex 對話：合法舊 Token 檔存在，但 MCP 畫面沒設 Token 時回報尚未設定", { skip }, async () => {
   const result = await runProbe({ standalone: true, legacyToken: true });
-  assert.equal(result.count, 11);
+  assert.equal(result.count, 14);
   const call = result.output.find((item) => item.text?.startsWith('{"content":'));
   assert.ok(call);
   const config = JSON.parse(call.text);

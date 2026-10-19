@@ -1,5 +1,5 @@
 // Codex 對話 Token（openfun_set_token／openfun_clear_token）測試。全部只連本機 mock API，使用假 Token。
-// - Claude Desktop 維持 9 個工具；Codex 為 11 個
+// - Claude Desktop 為 12 個工具；Codex 為 14 個
 // - 缺 Token → 設定 → 查詢；上游拒絕、格式錯誤、redirect 時保留原狀態
 // - 取代 Token 時更換 schema 快取；清除後不回退；設定與清除依呼叫順序執行
 // - 並行的慢查詢在 Token 被取代後，仍遮蔽它自己使用的舊 Token
@@ -29,6 +29,7 @@ const QUERY_TOOLS = [
   "openfun_query_records",
   "openfun_search",
 ];
+const EXPORT_TOOLS = ["openfun_cancel_export", "openfun_export_excel", "openfun_export_status"];
 const TOKEN_TOOLS = ["openfun_clear_token", "openfun_set_token"];
 const DETAIL_PATH = `/api/v1/datasets/${COMPANY_SLUG}`;
 
@@ -57,11 +58,11 @@ function assertNo(r, ...tokens) {
   for (const t of tokens) assert.ok(!all.includes(t), `輸出不可包含 Token（${t.slice(0, 6)}…）`);
 }
 
-test("工具清單：Claude Desktop 只有 9 個唯讀工具；Codex 為 11 個，Token 管理工具不是 readOnly", async () => {
+test("工具清單：Claude Desktop 只有 9 個查詢與 3 個匯出工具；Codex 為 14 個，Token 管理工具不是 readOnly", async () => {
   const claude = await connect({ host: CLAUDE_DESKTOP_HOST, token: GOOD_TOKEN });
   try {
     const { tools } = await claude.client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), QUERY_TOOLS);
+    assert.deepEqual(tools.map((t) => t.name).sort(), [...QUERY_TOOLS, ...EXPORT_TOOLS].sort());
     assert.doesNotMatch(claude.client.getInstructions(), /openfun_set_token|短效/);
   } finally {
     await claude.close();
@@ -69,10 +70,10 @@ test("工具清單：Claude Desktop 只有 9 個唯讀工具；Codex 為 11 個�
   const codex = await connect();
   try {
     const { tools } = await codex.client.listTools();
-    assert.deepEqual(tools.map((t) => t.name).sort(), [...QUERY_TOOLS, ...TOKEN_TOOLS].sort());
+    assert.deepEqual(tools.map((t) => t.name).sort(), [...QUERY_TOOLS, ...EXPORT_TOOLS, ...TOKEN_TOOLS].sort());
     for (const t of tools) {
       const isTokenTool = TOKEN_TOOLS.includes(t.name);
-      assert.equal(t.annotations.readOnlyHint, !isTokenTool, t.name);
+      assert.equal(t.annotations.readOnlyHint, !isTokenTool && !["openfun_export_excel", "openfun_cancel_export"].includes(t.name), t.name);
       assert.equal(t.annotations.destructiveHint, false, t.name);
       if (!isTokenTool) assert.ok(!JSON.stringify(t.inputSchema).match(/token/i), `${t.name} 不可有 token 參數`);
     }
@@ -369,7 +370,7 @@ test("打包後的 Codex server：stdout／stderr 不含 Token，不寫任何檔
     await s.request("initialize", { protocolVersion: "2025-06-18", capabilities: {}, clientInfo: { name: "raw", version: "1" } });
     s.notify("notifications/initialized");
     const list = await s.request("tools/list", {});
-    assert.equal(list.result.tools.length, 11);
+    assert.equal(list.result.tools.length, 14);
     const bad = await s.call("openfun_set_token", { token: EXPIRED_TOKEN });
     assert.equal(bad.result.isError, true);
     const ok = await s.call("openfun_set_token", { token: GOOD_TOKEN });

@@ -6,7 +6,7 @@
 > 幫我查「開放文化基金會」出現在哪些資料集？
 > 臺北市資本額超過一億元的公司有幾家？列出前 10 家，附上資料來源。
 
-AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改任何資料。
+AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改歐噴資料；要求 Excel 匯出時會寫入本機下載資料夾。
 
 兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；Token 可直接在連線設定畫面輸入，也提供對話短效 Token 方式。
 
@@ -74,6 +74,20 @@ Token 會存入 Codex 本機設定，未加密；請勿分享含有 Token 的設
 
 詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)。
 
+## 完整匯出 Excel
+
+在對話中說：
+
+> 請把剛才符合條件的全部資料匯出成 Excel，附上來源與查詢條件。
+
+外掛會自行分頁取完資料、核對筆數，再存到執行外掛那台電腦之家目錄 **Downloads/OpenFun（下載／OpenFun）**。AI 會查詢進度，完成後告訴你檔案位置；不必讓資料逐筆經聊天轉寫。若聊天中的檔案連結無法點開，直接從本機「下載／OpenFun」開啟。這不是雲端對話附件，也不要求另外設定 Token。
+
+Excel 固定包含「查詢結果」及「來源與處理說明」兩個工作表，保留統編開頭的零、數值型別與查詢條件。排序會在全部資料取得後由程式執行。
+
+第一版每次最多 **10,000 筆、200 欄、32 MiB 資料**，仍受 API 權限、額度與取數上限限制。超限、缺頁、重複或查詢期間資料變動會停止，**不把部分資料當成完整檔案**。暫時性連線／伺服器錯誤會自動重試；其他失敗可在處理原因後重新匯出。可請 AI 取消進行中的匯出；重啟程式或更換 Token 後，未完成工作需重做。已完成檔案會留在本機，移除外掛不會刪除。
+
+目前已驗證打包程式、MCP 檔案資源與 Codex app-server 的交付；macOS／Windows 圖形介面的點擊與下載仍待實機驗收。本機資料夾是檔案交付的保底方式。
+
 ## Token 注意事項
 
 - Claude Desktop：只在擴充套件設定畫面輸入，由 Claude Desktop 存放在系統憑證儲存區（macOS 鑰匙圈、Windows 認證管理員）；不要貼到 Claude 聊天中。
@@ -92,7 +106,7 @@ Token 會存入 Codex 本機設定，未加密；請勿分享含有 Token 的設
 |---|---|---|---|
 | `openfun-claude-extension.mcpb` | Claude Desktop | Settings > Extensions | 真正的查詢功能，含 Token 設定欄位（必要） |
 | `openfun-chat-plugin.zip` | Claude Desktop | Customize > Plugins | 只含聊天指引，不能單獨查資料（可選） |
-| `openfun-codex-plugin.zip` | Codex | 更新本機連線程式用；安裝請新增 GitHub 市集 | 9 個唯讀查詢工具、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
+| `openfun-codex-plugin.zip` | Codex | 更新本機連線程式用；安裝請新增 GitHub 市集 | 9 個唯讀查詢工具、3 個 Excel 匯出工具、對話 Token 工具與使用指引；需要 Node.js 18 以上 |
 
 三個檔案不能互換：`.mcpb` 不能上傳到 Customize > Plugins，Claude 的 ZIP 也不能給 Codex 使用。
 

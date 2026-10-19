@@ -62,7 +62,7 @@ test("manifest：Token 為唯一必填設定、sensitive、以環境變數注入
   assert.equal(m.user_config.api_token.required, true);
   assert.deepEqual(m.compatibility.platforms, ["darwin", "win32"]);
   assert.ok(!JSON.stringify(m).includes("OPENFUN_DEV"), "開發用覆寫不可出現在 manifest");
-  assert.equal(m.tools.length, 9);
+  assert.equal(m.tools.length, 12);
   const pkg = JSON.parse(readFileSync(join(root, "package.json"), "utf8"));
   const versionTs = readFileSync(join(root, "src", "version.ts"), "utf8").match(/VERSION = "([^"]+)"/)[1];
   assert.equal(m.version, pkg.version, "manifest.json 與 package.json 版本需一致");

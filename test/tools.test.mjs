@@ -30,14 +30,17 @@ function assertNoToken(r) {
 }
 const lastReq = (pathPart) => [...api.requests].reverse().find((r) => r.path.includes(pathPart));
 
-test("tools/list：9 個唯讀工具、annotations 與 instructions", async () => {
+test("tools/list：9 個查詢與 3 個匯出工具、annotations 與 instructions", async () => {
   const { client, close } = await connect();
   try {
     const { tools } = await client.listTools();
     const names = tools.map((t) => t.name).sort();
     assert.deepEqual(names, [
       "openfun_aggregate",
+      "openfun_cancel_export",
       "openfun_check_config",
+      "openfun_export_excel",
+      "openfun_export_status",
       "openfun_get_dataset",
       "openfun_get_record",
       "openfun_get_skill",
@@ -47,9 +50,9 @@ test("tools/list：9 個唯讀工具、annotations 與 instructions", async () =
       "openfun_search",
     ]);
     for (const t of tools) {
-      assert.equal(t.annotations.readOnlyHint, true, t.name);
+      assert.equal(t.annotations.readOnlyHint, !["openfun_export_excel", "openfun_cancel_export"].includes(t.name), t.name);
       assert.equal(t.annotations.destructiveHint, false, t.name);
-      assert.equal(t.annotations.openWorldHint, true, t.name);
+      assert.equal(t.annotations.openWorldHint, !["openfun_export_status", "openfun_cancel_export"].includes(t.name), t.name);
       assert.ok(t.annotations.title && t.title, t.name);
       assert.ok(t.description.length > 40, t.name);
       assert.ok(!JSON.stringify(t.inputSchema).match(/token|url"/i), `${t.name} 不可有 token 或 url 參數`);
