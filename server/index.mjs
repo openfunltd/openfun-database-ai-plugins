@@ -4616,10 +4616,10 @@ var require_core = __commonJS({
         return this;
       }
       // Add format
-      addFormat(name, format) {
-        if (typeof format == "string")
-          format = new RegExp(format);
-        this.formats[name] = format;
+      addFormat(name, format2) {
+        if (typeof format2 == "string")
+          format2 = new RegExp(format2);
+        this.formats[name] = format2;
         return this;
       }
       errorsText(errors = this.errors, { separator = ", ", dataVar = "data" } = {}) {
@@ -4737,9 +4737,9 @@ var require_core = __commonJS({
     }
     function addInitialFormats() {
       for (const name in this.opts.formats) {
-        const format = this.opts.formats[name];
-        if (format)
-          this.addFormat(name, format);
+        const format2 = this.opts.formats[name];
+        if (format2)
+          this.addFormat(name, format2);
       }
     }
     function addInitialKeywords(defs) {
@@ -6422,18 +6422,18 @@ var require_format = __commonJS({
           });
           const fDef = gen.const("fDef", (0, codegen_1._)`${fmts}[${schemaCode}]`);
           const fType = gen.let("fType");
-          const format = gen.let("format");
-          gen.if((0, codegen_1._)`typeof ${fDef} == "object" && !(${fDef} instanceof RegExp)`, () => gen.assign(fType, (0, codegen_1._)`${fDef}.type || "string"`).assign(format, (0, codegen_1._)`${fDef}.validate`), () => gen.assign(fType, (0, codegen_1._)`"string"`).assign(format, fDef));
+          const format2 = gen.let("format");
+          gen.if((0, codegen_1._)`typeof ${fDef} == "object" && !(${fDef} instanceof RegExp)`, () => gen.assign(fType, (0, codegen_1._)`${fDef}.type || "string"`).assign(format2, (0, codegen_1._)`${fDef}.validate`), () => gen.assign(fType, (0, codegen_1._)`"string"`).assign(format2, fDef));
           cxt.fail$data((0, codegen_1.or)(unknownFmt(), invalidFmt()));
           function unknownFmt() {
             if (opts.strictSchema === false)
               return codegen_1.nil;
-            return (0, codegen_1._)`${schemaCode} && !${format}`;
+            return (0, codegen_1._)`${schemaCode} && !${format2}`;
           }
           function invalidFmt() {
-            const callFormat = schemaEnv.$async ? (0, codegen_1._)`(${fDef}.async ? await ${format}(${data}) : ${format}(${data}))` : (0, codegen_1._)`${format}(${data})`;
-            const validData = (0, codegen_1._)`(typeof ${format} == "function" ? ${callFormat} : ${format}.test(${data}))`;
-            return (0, codegen_1._)`${format} && ${format} !== true && ${fType} === ${ruleType} && !${validData}`;
+            const callFormat = schemaEnv.$async ? (0, codegen_1._)`(${fDef}.async ? await ${format2}(${data}) : ${format2}(${data}))` : (0, codegen_1._)`${format2}(${data})`;
+            const validData = (0, codegen_1._)`(typeof ${format2} == "function" ? ${callFormat} : ${format2}.test(${data}))`;
+            return (0, codegen_1._)`${format2} && ${format2} !== true && ${fType} === ${ruleType} && !${validData}`;
           }
         }
         function validateFormat() {
@@ -6444,7 +6444,7 @@ var require_format = __commonJS({
           }
           if (formatDef === true)
             return;
-          const [fmtType, format, fmtRef] = getFormat(formatDef);
+          const [fmtType, format2, fmtRef] = getFormat(formatDef);
           if (fmtType === ruleType)
             cxt.pass(validCondition());
           function unknownFormat() {
@@ -6471,7 +6471,7 @@ var require_format = __commonJS({
                 throw new Error("async format in sync schema");
               return (0, codegen_1._)`await ${fmtRef}(${data})`;
             }
-            return typeof format == "function" ? (0, codegen_1._)`${fmtRef}(${data})` : (0, codegen_1._)`${fmtRef}.test(${data})`;
+            return typeof format2 == "function" ? (0, codegen_1._)`${fmtRef}(${data})` : (0, codegen_1._)`${fmtRef}.test(${data})`;
           }
         }
       }
@@ -6486,8 +6486,8 @@ var require_format2 = __commonJS({
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     var format_1 = require_format();
-    var format = [format_1.default];
-    exports.default = format;
+    var format2 = [format_1.default];
+    exports.default = format2;
   }
 });
 
@@ -7129,17 +7129,17 @@ var require_limit = __commonJS({
           cxt.fail$data((0, codegen_1.or)((0, codegen_1._)`typeof ${fmt} != "object"`, (0, codegen_1._)`${fmt} instanceof RegExp`, (0, codegen_1._)`typeof ${fmt}.compare != "function"`, compareCode(fmt)));
         }
         function validateFormat() {
-          const format = fCxt.schema;
-          const fmtDef = self.formats[format];
+          const format2 = fCxt.schema;
+          const fmtDef = self.formats[format2];
           if (!fmtDef || fmtDef === true)
             return;
           if (typeof fmtDef != "object" || fmtDef instanceof RegExp || typeof fmtDef.compare != "function") {
-            throw new Error(`"${keyword}": format "${format}" does not define "compare" function`);
+            throw new Error(`"${keyword}": format "${format2}" does not define "compare" function`);
           }
           const fmt = gen.scopeValue("formats", {
-            key: format,
+            key: format2,
             ref: fmtDef,
-            code: opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(format)}` : void 0
+            code: opts.code.formats ? (0, codegen_1._)`${opts.code.formats}${(0, codegen_1.getProperty)(format2)}` : void 0
           });
           cxt.fail$data(compareCode(fmt));
         }
@@ -20423,8 +20423,8 @@ function generateMultipleOfCheck(doc, ctx, def, accessor) {
   }
 }
 function generateNumberFormatCheck(doc, def, accessor) {
-  const format = def.format;
-  switch (format) {
+  const format2 = def.format;
+  switch (format2) {
     case "safeint":
       doc.write(`if (!Number.isSafeInteger(${accessor})) return INVALID;`);
       break;
@@ -20441,16 +20441,16 @@ function generateNumberFormatCheck(doc, def, accessor) {
       doc.write(`if (!Number.isFinite(${accessor})) return INVALID;`);
       break;
     default: {
-      void format;
-      throw new ZodCompileUnsupportedError(`number format ${format}`);
+      void format2;
+      throw new ZodCompileUnsupportedError(`number format ${format2}`);
     }
   }
 }
 function generateBigIntFormatCheck(doc, def, accessor) {
-  const format = def.format;
-  if (!format)
+  const format2 = def.format;
+  if (!format2)
     return;
-  switch (format) {
+  switch (format2) {
     case "int64":
       doc.write(`if (${accessor} < -9223372036854775808n || ${accessor} > 9223372036854775807n) return INVALID;`);
       break;
@@ -20458,8 +20458,8 @@ function generateBigIntFormatCheck(doc, def, accessor) {
       doc.write(`if (${accessor} < 0n || ${accessor} > 18446744073709551615n) return INVALID;`);
       break;
     default: {
-      void format;
-      throw new ZodCompileUnsupportedError(`bigint format ${format}`);
+      void format2;
+      throw new ZodCompileUnsupportedError(`bigint format ${format2}`);
     }
   }
 }
@@ -20640,8 +20640,8 @@ function generateStringFormatCheck(doc, ctx, def, accessor, needsValue = true) {
     doc.write(`if (!${patternConst}.test(${accessor})) return INVALID;`);
     return accessor;
   }
-  const format = def.format;
-  switch (format) {
+  const format2 = def.format;
+  switch (format2) {
     case "regex":
       throw new ZodCompileUnsupportedError("regex format without a pattern");
     case "lowercase":
@@ -20664,8 +20664,8 @@ function generateStringFormatCheck(doc, ctx, def, accessor, needsValue = true) {
       break;
     }
     default: {
-      void format;
-      throw new ZodCompileUnsupportedError(`string format ${format}`);
+      void format2;
+      throw new ZodCompileUnsupportedError(`string format ${format2}`);
     }
   }
   return accessor;
@@ -22748,12 +22748,12 @@ function _stringbool(Classes, _params) {
   return codec2;
 }
 // @__NO_SIDE_EFFECTS__
-function _stringFormat(Class2, format, fnOrRegex, _params = {}) {
+function _stringFormat(Class2, format2, fnOrRegex, _params = {}) {
   const params = normalizeParams(_params);
   const def = {
     check: "string_format",
     type: "string",
-    format,
+    format: format2,
     fn: typeof fnOrRegex === "function" ? fnOrRegex : (val) => fnOrRegex.test(val),
     ...params
   };
@@ -23319,9 +23319,9 @@ var addPattern = (agg, pattern) => {
 var intersectMime = (agg, mime) => {
   agg.mime = agg.mime ? agg.mime.filter((m) => mime.includes(m)) : [...mime];
 };
-var setFormat = (agg, format) => {
-  agg.format = format;
-  if (format.includes("int"))
+var setFormat = (agg, format2) => {
+  agg.format = format2;
+  if (format2.includes("int"))
     agg.isInt = true;
 };
 var minContributor = (agg, def) => narrowMin(agg, "minimum", def.minimum);
@@ -23399,16 +23399,16 @@ var exactPattern = (p) => exactPatterns.get(p) ?? p;
 var stringProcessor = (schema, ctx, _json, _params) => {
   const json3 = _json;
   json3.type = "string";
-  const { minimum, maximum, format, patterns, contentEncoding, laxFormat } = aggregateChecks(schema);
+  const { minimum, maximum, format: format2, patterns, contentEncoding, laxFormat } = aggregateChecks(schema);
   if (typeof minimum === "number")
     json3.minLength = minimum;
   if (typeof maximum === "number")
     json3.maxLength = maximum;
-  if (format) {
-    json3.format = formatMap[format] ?? format;
+  if (format2) {
+    json3.format = formatMap[format2] ?? format2;
     if (json3.format === "")
       delete json3.format;
-    if (format === "time" || laxFormat) {
+    if (format2 === "time" || laxFormat) {
       delete json3.format;
     }
   }
@@ -23786,7 +23786,7 @@ function stringifyKeyNames(bySchema, json3, visited) {
   const values = json3.enum ?? (json3.const !== void 0 ? [json3.const] : void 0);
   if (!numericType && !values?.some((v) => typeof v === "number"))
     return json3;
-  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format, id, ...rest } = json3;
+  const { minimum, maximum, exclusiveMinimum, exclusiveMaximum, multipleOf, format: format2, id, ...rest } = json3;
   if (rest.enum)
     rest.enum = rest.enum.map((v) => typeof v === "number" ? String(v) : v);
   else if (typeof rest.const === "number")
@@ -24922,8 +24922,8 @@ var ZodCustomStringFormat = /* @__PURE__ */ $constructor("ZodCustomStringFormat"
   $ZodCustomStringFormat.init(inst, def);
   ZodStringFormat.init(inst, def);
 });
-function stringFormat(format, fnOrRegex, _params = {}) {
-  return _stringFormat(ZodCustomStringFormat, format, fnOrRegex, _params);
+function stringFormat(format2, fnOrRegex, _params = {}) {
+  return _stringFormat(ZodCustomStringFormat, format2, fnOrRegex, _params);
 }
 function hostname2(_params) {
   return _stringFormat(ZodCustomStringFormat, "hostname", hostname, _params);
@@ -24936,11 +24936,11 @@ function currencyCode2(_params) {
 }
 function hash(alg, params) {
   const enc2 = params?.enc ?? "hex";
-  const format = `${alg}_${enc2}`;
-  const regex = regexes_exports[format];
+  const format2 = `${alg}_${enc2}`;
+  const regex = regexes_exports[format2];
   if (!regex)
-    throw new Error(`Unrecognized hash format: ${format}`);
-  return _stringFormat(ZodCustomStringFormat, format, regex, params);
+    throw new Error(`Unrecognized hash format: ${format2}`);
+  return _stringFormat(ZodCustomStringFormat, format2, regex, params);
 }
 var ZodNumber = /* @__PURE__ */ $constructor(
   "ZodNumber",
@@ -26305,58 +26305,58 @@ function convertBaseSchema(schema, ctx) {
     case "string": {
       let stringSchema = z.string();
       if (schema.format) {
-        const format = schema.format;
-        if (format === "email") {
+        const format2 = schema.format;
+        if (format2 === "email") {
           stringSchema = stringSchema.check(z.email());
-        } else if (format === "uri" || format === "uri-reference") {
+        } else if (format2 === "uri" || format2 === "uri-reference") {
           stringSchema = stringSchema.check(z.url());
-        } else if (format === "uuid" || format === "guid") {
+        } else if (format2 === "uuid" || format2 === "guid") {
           stringSchema = stringSchema.check(z.uuid());
-        } else if (format === "date-time") {
+        } else if (format2 === "date-time") {
           stringSchema = stringSchema.check(z.iso.datetime({ offset: true }));
-        } else if (format === "date") {
+        } else if (format2 === "date") {
           stringSchema = stringSchema.check(z.iso.date());
-        } else if (format === "time") {
+        } else if (format2 === "time") {
           stringSchema = stringSchema.check(z.regex(fullTime));
-        } else if (format === "duration") {
+        } else if (format2 === "duration") {
           stringSchema = stringSchema.check(z.iso.duration());
-        } else if (format === "hostname") {
+        } else if (format2 === "hostname") {
           stringSchema = stringSchema.check(z.hostname());
-        } else if (format === "ipv4") {
+        } else if (format2 === "ipv4") {
           stringSchema = stringSchema.check(z.ipv4());
-        } else if (format === "ipv6") {
+        } else if (format2 === "ipv6") {
           stringSchema = stringSchema.check(z.ipv6());
-        } else if (format === "mac") {
+        } else if (format2 === "mac") {
           stringSchema = stringSchema.check(z.mac());
-        } else if (format === "cidr") {
+        } else if (format2 === "cidr") {
           stringSchema = stringSchema.check(z.cidrv4());
-        } else if (format === "cidr-v6") {
+        } else if (format2 === "cidr-v6") {
           stringSchema = stringSchema.check(z.cidrv6());
-        } else if (format === "base64") {
+        } else if (format2 === "base64") {
           stringSchema = stringSchema.check(z.base64());
-        } else if (format === "base64url") {
+        } else if (format2 === "base64url") {
           stringSchema = stringSchema.check(z.base64url());
-        } else if (format === "e164") {
+        } else if (format2 === "e164") {
           stringSchema = stringSchema.check(z.e164());
-        } else if (format === "credit_card") {
+        } else if (format2 === "credit_card") {
           stringSchema = stringSchema.check(z.creditCard());
-        } else if (format === "iban") {
+        } else if (format2 === "iban") {
           stringSchema = stringSchema.check(z.iban());
-        } else if (format === "jwt") {
+        } else if (format2 === "jwt") {
           stringSchema = stringSchema.check(z.jwt());
-        } else if (format === "emoji") {
+        } else if (format2 === "emoji") {
           stringSchema = stringSchema.check(z.emoji());
-        } else if (format === "nanoid") {
+        } else if (format2 === "nanoid") {
           stringSchema = stringSchema.check(z.nanoid());
-        } else if (format === "cuid") {
+        } else if (format2 === "cuid") {
           stringSchema = stringSchema.check(z.cuid());
-        } else if (format === "cuid2") {
+        } else if (format2 === "cuid2") {
           stringSchema = stringSchema.check(z.cuid2());
-        } else if (format === "ulid") {
+        } else if (format2 === "ulid") {
           stringSchema = stringSchema.check(z.ulid());
-        } else if (format === "xid") {
+        } else if (format2 === "xid") {
           stringSchema = stringSchema.check(z.xid());
-        } else if (format === "ksuid") {
+        } else if (format2 === "ksuid") {
           stringSchema = stringSchema.check(z.ksuid());
         }
       }
@@ -38366,7 +38366,7 @@ function cell(value, ref, header) {
   return `<c r="${ref}" t="inlineStr" s="${header ? 1 : 0}"><is><t xml:space="preserve">${xml(String(value))}</t></is></c>`;
 }
 function makeWorkbook(sheets) {
-  if (sheets.length !== 2) throw new Error("Expected two export worksheets");
+  if (!sheets.length || sheets.length > 3) throw new Error("Expected one to three export worksheets");
   const entries = {};
   let bytes = 0;
   const put = (name, text) => {
@@ -38390,6 +38390,60 @@ function makeWorkbook(sheets) {
     put(`xl/worksheets/sheet${i2 + 1}.xml`, text);
   }
   return zipSync(entries, { level: 6 });
+}
+
+// src/export-summary.ts
+function decimal(value) {
+  if (typeof value !== "number" && typeof value !== "string" || !Number.isFinite(Number(value)) || typeof value === "number" && Number.isInteger(value) && !Number.isSafeInteger(value)) {
+    throw new OpenFunError("validation", "\u7D71\u8A08\u6B04\u4F4D\u542B\u7121\u6CD5\u53EF\u9760\u8868\u793A\u7684\u6578\u503C\u3002");
+  }
+  const match = String(value).match(/^([+-]?)(\d*)(?:\.(\d*))?(?:[eE]([+-]?\d+))?$/);
+  if (!match || !(match[2] || match[3])) throw new OpenFunError("validation", "\u7D71\u8A08\u6B04\u4F4D\u542B\u7121\u6CD5\u8A08\u7B97\u7684\u6578\u503C\u3002");
+  const digits = (match[2] + (match[3] ?? "")).replace(/^0+/, "") || "0";
+  const scale = (match[3]?.length ?? 0) - Number(match[4] ?? 0);
+  if (digits.length > 1e3 || !Number.isSafeInteger(scale) || Math.abs(scale) > 1e3) {
+    throw new OpenFunError("validation", "\u7D71\u8A08\u6B04\u4F4D\u8D85\u904E\u53EF\u8A08\u7B97\u7684\u5C0F\u6578\u7CBE\u5EA6\u4E0A\u9650\uFF0C\u8ACB\u6E1B\u5C11\u7D71\u8A08\u6B04\u4F4D\u3002");
+  }
+  let coefficient = BigInt(digits) * (match[1] === "-" ? -1n : 1n);
+  if (scale < 0) coefficient *= 10n ** BigInt(-scale);
+  return { coefficient, scale: Math.max(0, scale) };
+}
+function format(coefficient, scale) {
+  const negative = coefficient < 0n;
+  const digits = (negative ? -coefficient : coefficient).toString().padStart(scale + 1, "0");
+  const text = scale ? `${digits.slice(0, -scale)}.${digits.slice(-scale)}`.replace(/\.?0+$/, "") : digits;
+  return (negative ? "-" : "") + text;
+}
+function summarize(records, fields) {
+  return fields.map((field) => {
+    let sum = 0n, scale = 0, count = 0;
+    for (const record2 of records) {
+      const value = record2[field];
+      if (value === null || value === void 0) continue;
+      const item = decimal(value);
+      if (item.scale > scale) {
+        sum *= 10n ** BigInt(item.scale - scale);
+        scale = item.scale;
+      }
+      sum += item.coefficient * 10n ** BigInt(scale - item.scale);
+      count++;
+    }
+    let average = null;
+    if (count) {
+      const numerator = sum * 1000000n;
+      const denominator = BigInt(count) * 10n ** BigInt(scale);
+      const absolute = numerator < 0n ? -numerator : numerator;
+      const rounded = (absolute + denominator / 2n) / denominator;
+      average = format(numerator < 0n ? -rounded : rounded, 6);
+    }
+    return { field, count, missing: records.length - count, sum: format(sum, scale), average };
+  });
+}
+function summaryCell(value) {
+  if (value === null) return null;
+  const n = Number(value);
+  const digits = value.replace(/[-.]/g, "").replace(/^0+/, "").length;
+  return Number.isFinite(n) && !(n === 0 && /[1-9]/.test(value)) && digits <= 15 && (!Number.isInteger(n) || Number.isSafeInteger(n)) ? n : value;
 }
 
 // src/export.ts
@@ -38516,6 +38570,7 @@ var ExcelExports = class {
       ...job.finishedAt ? { finished_at: job.finishedAt } : {},
       complete: job.state === "completed",
       ...job.file ? { file: job.file, delivery: "\u6A94\u6848\u5DF2\u5B58\u5230\u57F7\u884C\u6B64\u5916\u639B\u7684\u96FB\u8166\uFF0C\u5BB6\u76EE\u9304\u7684 Downloads/OpenFun\uFF08\u4E0B\u8F09\uFF0FOpenFun\uFF09\u8CC7\u6599\u593E\u3002\u82E5\u804A\u5929\u4E0D\u652F\u63F4\u672C\u6A5F\u6A94\u6848\u9023\u7D50\uFF0C\u8ACB\u5F9E\u8A72\u8CC7\u6599\u593E\u958B\u555F\uFF1B\u4E0D\u9700\u8981\u7D42\u7AEF\u6A5F\u3002" } : {},
+      ...job.file ? { workbook: { worksheets: ["\u67E5\u8A62\u7D50\u679C", "\u7D71\u8A08\u6458\u8981", "\u4F86\u6E90\u8207\u8655\u7406\u8AAA\u660E"], auto_filter: true, frozen_header_rows: 1, summary: job.summary } } : {},
       ...job.error ? { error: job.error } : {},
       ...job.state === "running" ? { next_step: "\u8ACB\u7528 openfun_export_status \u67E5\u8A62\u9019\u500B export_id\uFF08wait_ms=2000\uFF09\uFF0C\u76F4\u5230 completed\u3001failed \u6216 cancelled\uFF1B\u4E0D\u8981\u9010\u9801\u8F49\u6284\u8CC7\u6599\u6216\u5728\u5B8C\u6210\u524D\u5BA3\u7A31\u5DF2\u5B8C\u6574\u532F\u51FA\u3002" } : {},
       ...job.state === "failed" || job.state === "cancelled" ? { next_step: "\u672A\u5B8C\u6210\u532F\u51FA\uFF0C\u6C92\u6709\u5B8C\u6574\u7D50\u679C\u6A94\uFF1B\u89E3\u6C7A\u932F\u8AA4\u5F8C\u53EF\u91CD\u65B0\u547C\u53EB openfun_export_excel\u3002" } : {}
@@ -38547,6 +38602,13 @@ var ExcelExports = class {
       return col;
     }) : schema;
     if (!columns.length || columns.length > 200) invalid("\u532F\u51FA\u6B04\u4F4D\u5FC5\u9808\u4ECB\u65BC 1\u2013200 \u6B04\u3002");
+    const numeric = (c) => NUMERIC.has(c.type ?? "") && !c.multi;
+    const summaryNames = spec.summaryFields ?? [.../* @__PURE__ */ new Set([
+      ...columns.filter(numeric).map((c) => c.name),
+      ...schema.filter((c) => numeric(c) && c.name === spec.query.sort?.field).map((c) => c.name)
+    ])];
+    if (summaryNames.length > 20) invalid("\u6578\u503C\u6B04\u4F4D\u8D85\u904E 20 \u500B\uFF0C\u8ACB\u7528 summary_fields \u6307\u5B9A\u6700\u591A 20 \u500B\u8981\u7D71\u8A08\u7684\u6B04\u4F4D\u3002");
+    if (summaryNames.some((name2) => !schema.some((c) => c.name === name2 && numeric(c)))) invalid("\u7D71\u8A08\u6B04\u4F4D\u5FC5\u9808\u662F schema \u4E2D\u7684\u55AE\u503C\u6578\u503C\u6B04\u4F4D\u3002");
     const records = [];
     const ids = /* @__PURE__ */ new Set();
     const warnings = /* @__PURE__ */ new Set();
@@ -38570,6 +38632,7 @@ var ExcelExports = class {
         firstId ??= id;
         const projected = Object.fromEntries(columns.map((c) => [c.name, valueAt(record2, c.name)]));
         if (spec.query.sort) projected[spec.query.sort.field] = valueAt(record2, spec.query.sort.field);
+        for (const name2 of summaryNames) projected[name2] = valueAt(record2, name2);
         bytes += Buffer.byteLength(JSON.stringify(projected));
         if (bytes > MAX_BYTES) invalid("\u8CC7\u6599\u8D85\u904E 32 MiB \u532F\u51FA\u5927\u5C0F\u4E0A\u9650\u3002");
         records.push(projected);
@@ -38588,14 +38651,14 @@ var ExcelExports = class {
     this.#active(job);
     if (spec.query.sort) {
       const { field, direction } = spec.query.sort;
-      const numeric = NUMERIC.has(indexSchema(schema).typeOf.get(field) ?? "");
+      const numeric2 = NUMERIC.has(indexSchema(schema).typeOf.get(field) ?? "");
       const collator = new Intl.Collator("zh-Hant", { numeric: true });
       records.sort((a, b) => {
         const av = valueAt(a, field), bv = valueAt(b, field);
         if (av === void 0 || av === null) return bv === void 0 || bv === null ? 0 : 1;
         if (bv === void 0 || bv === null) return -1;
         let cmp;
-        if (numeric) {
+        if (numeric2) {
           const an = numberValue(av), bn = numberValue(bv);
           if (an === null || bn === null) invalid(`\u6392\u5E8F\u6B04\u4F4D\u300C${field}\u300D\u542B\u7121\u6548\u6578\u5B57\u3002`);
           cmp = an - bn;
@@ -38624,8 +38687,25 @@ var ExcelExports = class {
       ["\u8CC7\u6599\u683C\u5F0F", "\u6578\u503C\u6B04\u4F4D\u4FDD\u7559\u70BA\u6578\u5B57\uFF1B\u8B58\u5225\u78BC\u8207\u65E5\u671F\u70BA\u6587\u5B57\uFF1B\u7269\u4EF6\u8207\u9663\u5217\u70BA JSON \u6587\u5B57\u3002\u8D85\u51FA Excel \u6578\u5B57\u7CBE\u5EA6\u6642\u4FDD\u7559\u6587\u5B57\u3002"],
       ["\u4E00\u81F4\u6027\u9650\u5236", "\u5DF2\u6838\u5C0D\u9801\u9762\u6578\u91CF\u3001\u91CD\u8907\u8B58\u5225\u78BC\u8207\u524D\u5F8C\u7248\u672C\uFF0C\u4F46 API \u4E0D\u4FDD\u8B49\u67E5\u8A62\u671F\u9593\u7684\u5F37\u4E00\u81F4\u6027\u5FEB\u7167\uFF1B\u8CC7\u6599\u8B8A\u52D5\u6642\u61C9\u91CD\u65B0\u67E5\u8A62\u3002"]
     ];
+    const numericSummary = summarize(records, summaryNames);
+    const summary = {
+      record_count: job.rows,
+      numeric_fields: numericSummary,
+      average_decimal_places: 6,
+      note: "\u4F9D\u672C\u6B21\u5B8C\u6574\u7BE9\u9078\u7D50\u679C\u8A08\u7B97\uFF1B\u7A7A\u503C\u4E0D\u8A08\u5165\u5E73\u5747\uFF0C\u5E73\u5747\u56DB\u6368\u4E94\u5165\u81F3\u6700\u591A\u516D\u4F4D\u5C0F\u6578\u3002\u6458\u8981\u662F\u532F\u51FA\u7576\u4E0B\u7684\u503C\uFF0C\u4E0D\u96A8\u4E4B\u5F8C\u4FEE\u6539 Excel \u91CD\u7B97\u3002"
+    };
+    const summaryRows = [
+      ["\u9805\u76EE", "\u5167\u5BB9"],
+      ["\u5B8C\u6574\u8A18\u9304\u7B46\u6578", job.rows],
+      ["\u7D71\u8A08\u7BC4\u570D", "\u672C\u6B21\u5168\u90E8\u7B26\u5408\u67E5\u8A62\u689D\u4EF6\u7684\u8A18\u9304"],
+      ["\u8A08\u7B97\u65B9\u5F0F", summary.note],
+      [],
+      ["\u6B04\u4F4D", "\u6709\u503C\u7B46\u6578", "\u672A\u63D0\u4F9B\u7B46\u6578", "\u5408\u8A08", "\u5E73\u5747"],
+      ...numericSummary.map((s) => [s.field, s.count, s.missing, summaryCell(s.sum), summaryCell(s.average)])
+    ];
     const workbook = makeWorkbook([
       { name: "\u67E5\u8A62\u7D50\u679C", filter: true, rows: [columns.map((c) => redact(c.name, token)), ...records.map((r) => columns.map((c) => cellValue(r[c.name], c, token)))] },
+      { name: "\u7D71\u8A08\u6458\u8981", rows: summaryRows.map((r) => r.map((v) => typeof v === "string" ? redact(v, token) : v)) },
       { name: "\u4F86\u6E90\u8207\u8655\u7406\u8AAA\u660E", rows: metadata.map((r) => r.map((v) => typeof v === "string" ? redact(v, token) : v)) }
     ]);
     this.#active(job);
@@ -38651,6 +38731,7 @@ var ExcelExports = class {
       });
     }
     job.file = { path, uri: pathToFileURL(path).href, name, bytes: workbook.length, sha256: createHash("sha256").update(workbook).digest("hex") };
+    job.summary = summary;
     job.state = "completed";
   }
 };
@@ -38813,7 +38894,7 @@ openfun_get_record \u90FD\u652F\u63F4\uFF09\u53EA\u53D6\u9700\u8981\u7684\u6B04\
 \u62FF\u5230 export_id \u5F8C\u6301\u7E8C\u7528 openfun_export_status\uFF08wait_ms=2000\uFF09\u67E5\u8A62\uFF0C\u76F4\u5230 completed\uFF0Ffailed\uFF0Fcancelled\u3002
 \u5B8C\u6210\u5F8C\u63D0\u4F9B\u5BE6\u969B\u7B46\u6578\u3001\u672C\u6A5F\u6A94\u6848\u8DEF\u5F91\u8207\u8CC7\u6E90\u9023\u7D50\uFF1B\u6A94\u6848\u5728\u57F7\u884C\u5916\u639B\u96FB\u8166\u4E4B\u5BB6\u76EE\u9304 Downloads/OpenFun\uFF08\u4E0B\u8F09\uFF0FOpenFun\uFF09\u3002
 \u4E0D\u8981\u628A\u672C\u6A5F\u8DEF\u5F91\u7576\u6210\u96F2\u7AEF\u5206\u6790\u74B0\u5883\u53EF\u8B80\uFF0C\u4E5F\u4E0D\u8981\u5047\u7A31\u5DF2\u63D0\u4F9B\u804A\u5929\u4E0B\u8F09\u9644\u4EF6\uFF1B\u82E5\u7121\u6CD5\u9EDE\u958B\u9023\u7D50\uFF0C\u8ACB\u5F9E\u672C\u6A5F\u4E0B\u8F09\uFF0FOpenFun \u958B\u555F\u3002
-\u5169\u500B\u5DE5\u4F5C\u8868\u70BA\u300C\u67E5\u8A62\u7D50\u679C\u300D\u8207\u300C\u4F86\u6E90\u8207\u8655\u7406\u8AAA\u660E\u300D\u3002\u6B04\u4F4D\u7684\u6578\u503C\u3001\u6587\u5B57\u8207\u7D71\u7DE8\u524D\u5C0E\u96F6\u6703\u4FDD\u7559\uFF0C\u4E0D\u57F7\u884C\u8CC7\u6599\u4E2D\u7684\u516C\u5F0F\u3002
+\u4E09\u500B\u5DE5\u4F5C\u8868\u70BA\u300C\u67E5\u8A62\u7D50\u679C\u300D\u300C\u7D71\u8A08\u6458\u8981\u300D\u300C\u4F86\u6E90\u8207\u8655\u7406\u8AAA\u660E\u300D\u3002\u67E5\u8A62\u7D50\u679C\u5DF2\u958B\u555F\u7BE9\u9078\u3001\u51CD\u7D50\u9996\u5217\u3002\u7528 summary_fields \u6307\u5B9A\u6700\u591A 20 \u500B\u6578\u503C\u6B04\u4F4D\uFF0C\u76F4\u63A5\u5F9E\u5B8C\u6574\u67E5\u8A62\u7D50\u679C\u8A08\u7B97\u5408\u8A08\u3001\u5E73\u5747\uFF0C\u4E0D\u53D7\u7D71\u8A08 API \u7684\u7BC4\u570D\u689D\u4EF6\u9650\u5236\uFF1B\u7D50\u679C\u4E2D\u7684 workbook.summary \u53EF\u76F4\u63A5\u5F15\u7528\uFF0C\u4E0D\u5FC5\u8B80\u53D6\u672C\u6A5F Excel \u6216\u9010\u9801\u8F49\u6284\u3002\u6B04\u4F4D\u7684\u6578\u503C\u3001\u6587\u5B57\u8207\u7D71\u7DE8\u524D\u5C0E\u96F6\u6703\u4FDD\u7559\uFF0C\u4E0D\u57F7\u884C\u8CC7\u6599\u4E2D\u7684\u516C\u5F0F\u3002
 \u7B2C\u4E00\u7248\u6700\u591A 10000 \u7B46\u3001200 \u6B04\u300132 MiB\uFF1BAPI \u672C\u8EAB\u53EF\u80FD\u6709\u5176\u4ED6\u9650\u5236\u3002\u9047\u5230\u7F3A\u9801\u3001\u91CD\u8907\u6216\u524D\u5F8C\u7248\u672C\u6539\u8B8A\u6703\u5931\u6557\uFF0C\u4E0D\u88FD\u4F5C\u5192\u5145\u5B8C\u6574\u7684\u6A94\u6848\u3002
 \u5931\u6557\u6642\u8AAA\u660E\u5DF2\u53D6\u5F97\uFF0F\u9810\u671F\u7B46\u6578\u8207\u539F\u56E0\uFF0C\u89E3\u6C7A\u5F8C\u53EF\u91CD\u65B0\u532F\u51FA\uFF1B\u4E2D\u9014\u53EF openfun_cancel_export\u3002\u91CD\u555F\u6216\u66F4\u63DB Token \u5F8C\u672A\u5B8C\u6210\u5DE5\u4F5C\u9700\u91CD\u505A\u3002
 \u532F\u51FA\u4F7F\u7528\u76EE\u524D\u8A2D\u5B9A\u7684 Token\uFF0C\u4E0D\u8981\u6C42\u63D0\u4F9B\u7D66\u7A0B\u5F0F\u78BC\u6216\u518D\u8CBC\u4E00\u6B21\uFF1B\u53EA\u5728\u4F7F\u7528\u8005\u8981\u6C42\u532F\u51FA\u6642\u547C\u53EB\uFF0C\u56E0\u70BA\u9019\u6703\u5BEB\u5165\u672C\u6A5F\u6A94\u6848\u3002
@@ -39045,8 +39126,8 @@ function registerTools(server, session, opts = {}) {
   };
   server.registerTool("openfun_export_excel", {
     title: "\u5B8C\u6574\u532F\u51FA\u67E5\u8A62\u7D50\u679C\u70BA Excel",
-    description: "\u4F7F\u7528\u8207\u67E5\u8A18\u9304\u76F8\u540C\u7684\u689D\u4EF6\uFF0C\u6CBF\u7528\u76EE\u524D Token\uFF0C\u7531\u672C\u6A5F\u5916\u639B\u81EA\u884C\u5206\u9801\u53D6\u5F97\u5168\u90E8\u7B26\u5408\u8CC7\u6599\u4E26\u7522\u751F Excel\uFF0C\u4E0D\u628A\u8A18\u9304\u9010\u7B46\u4EA4\u7D66\u804A\u5929\u8F49\u6284\u3002\u6703\u5BEB\u5165\u5BB6\u76EE\u9304 Downloads/OpenFun\uFF1B\u4E0D\u4FEE\u6539\u6B50\u5674\u8CC7\u6599\u3002\u7B2C\u4E00\u7248\u6700\u591A 10000 \u7B46\u3001200 \u6B04\u300132 MiB \u8CC7\u6599\uFF1B\u8D85\u9650\u3001\u7F3A\u9801\u3001\u91CD\u8907\u6216\u8CC7\u6599\u8B8A\u52D5\u6703\u5931\u6557\uFF0C\u4E0D\u6703\u628A\u90E8\u5206\u8CC7\u6599\u7576\u5B8C\u6574\u3002\u56DE\u50B3 export_id \u5F8C\u8ACB\u7528 openfun_export_status\uFF08wait_ms=2000\uFF09\u6301\u7E8C\u67E5\u9032\u5EA6\uFF0C\u76F4\u5230\u5B8C\u6210\u518D\u63D0\u4F9B\u672C\u6A5F\u8DEF\u5F91\u3002\u8655\u7406\u904E\u7A0B\u53EF\u53D6\u6D88\uFF1B\u91CD\u555F\u5F8C\u672A\u5B8C\u6210\u5DE5\u4F5C\u9700\u91CD\u505A\u3002\u53EA\u5728\u4F7F\u7528\u8005\u8981\u6C42\u532F\u51FA\u6A94\u6848\u6642\u547C\u53EB\u3002",
-    inputSchema: { ...recordQueryShape, max_rows: external_exports.number().int().min(1).max(1e4).default(1e4).describe("\u5B89\u5168\u7B46\u6578\u4E0A\u9650\uFF1B\u7B26\u5408\u6578\u8D85\u904E\u6642\u6574\u9805\u505C\u6B62\uFF0C\u4E0D\u53EA\u532F\u51FA\u524D\u5E7E\u7B46") },
+    description: "\u4F7F\u7528\u8207\u67E5\u8A18\u9304\u76F8\u540C\u7684\u689D\u4EF6\uFF0C\u6CBF\u7528\u76EE\u524D Token\uFF0C\u7531\u672C\u6A5F\u5916\u639B\u81EA\u884C\u5206\u9801\u53D6\u5F97\u5168\u90E8\u7B26\u5408\u8CC7\u6599\u4E26\u7522\u751F Excel\uFF0C\u4E0D\u628A\u8A18\u9304\u9010\u7B46\u4EA4\u7D66\u804A\u5929\u8F49\u6284\u3002\u6703\u5BEB\u5165\u5BB6\u76EE\u9304 Downloads/OpenFun\uFF1B\u56FA\u5B9A\u4E09\u500B\u5DE5\u4F5C\u8868\uFF08\u67E5\u8A62\u7D50\u679C\u3001\u7D71\u8A08\u6458\u8981\u3001\u4F86\u6E90\u8207\u8655\u7406\u8AAA\u660E\uFF09\uFF0C\u5DF2\u8A2D\u7BE9\u9078\u53CA\u51CD\u7D50\u9996\u5217\u3002\u53EF\u7528 summary_fields \u6307\u5B9A\u6578\u503C\u6B04\u4F4D\u7684\u5408\u8A08\u3001\u5E73\u5747\uFF1B\u76F4\u63A5\u5F9E\u5B8C\u6574\u7BE9\u9078\u7D50\u679C\u8A08\u7B97\uFF0C\u5B8C\u6210\u72C0\u614B\u6703\u56DE\u50B3\u6578\u5B57\uFF0C\u4E0D\u9700\u8981\u628A\u8CC7\u6599\u8F49\u6284\u9032\u804A\u5929\u6216\u5148\u8B80\u53D6\u672C\u6A5F Excel\u3002\u4E0D\u4FEE\u6539\u6B50\u5674\u8CC7\u6599\u3002\u7B2C\u4E00\u7248\u6700\u591A 10000 \u7B46\u3001200 \u6B04\u300132 MiB \u8CC7\u6599\uFF1B\u8D85\u9650\u3001\u7F3A\u9801\u3001\u91CD\u8907\u6216\u8CC7\u6599\u8B8A\u52D5\u6703\u5931\u6557\uFF0C\u4E0D\u6703\u628A\u90E8\u5206\u8CC7\u6599\u7576\u5B8C\u6574\u3002\u56DE\u50B3 export_id \u5F8C\u8ACB\u7528 openfun_export_status\uFF08wait_ms=2000\uFF09\u6301\u7E8C\u67E5\u9032\u5EA6\uFF0C\u76F4\u5230\u5B8C\u6210\u518D\u63D0\u4F9B\u672C\u6A5F\u8DEF\u5F91\u3002\u8655\u7406\u904E\u7A0B\u53EF\u53D6\u6D88\uFF1B\u91CD\u555F\u5F8C\u672A\u5B8C\u6210\u5DE5\u4F5C\u9700\u91CD\u505A\u3002\u53EA\u5728\u4F7F\u7528\u8005\u8981\u6C42\u532F\u51FA\u6A94\u6848\u6642\u547C\u53EB\u3002",
+    inputSchema: { ...recordQueryShape, summary_fields: external_exports.array(fieldName).min(1).max(20).optional().describe("\u8981\u8A08\u7B97\u5408\u8A08\u8207\u5E73\u5747\u7684\u55AE\u503C\u6578\u503C\u6B04\u4F4D\uFF0C\u6700\u591A 20 \u500B\uFF1B\u53EF\u4E0D\u5217\u5165\u8F38\u51FA\u6B04\u4F4D\u3002\u672A\u6307\u5B9A\u6642\u7D71\u8A08\u532F\u51FA\u6B04\u4F4D\u53CA\u6392\u5E8F\u6B04\u4F4D\u4E2D\u7684\u6578\u503C\u6B04\u4F4D\u3002"), max_rows: external_exports.number().int().min(1).max(1e4).default(1e4).describe("\u5B89\u5168\u7B46\u6578\u4E0A\u9650\uFF1B\u7B26\u5408\u6578\u8D85\u904E\u6642\u6574\u9805\u505C\u6B62\uFF0C\u4E0D\u53EA\u532F\u51FA\u524D\u5E7E\u7B46") },
     annotations: { title: "\u5B8C\u6574\u532F\u51FA\u67E5\u8A62\u7D50\u679C\u70BA Excel", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true }
   }, (args) => run(async (ctx) => {
     const { data } = await ctx.client.getJson(paths.dataset(args.slug), { auth: "required" });
@@ -39064,15 +39145,20 @@ function registerTools(server, session, opts = {}) {
     }
     if (args.sort && !idx.names.has(args.sort.field) && !idx.subFilterKeys.has(args.sort.field)) throw unknownFieldError("sort", [args.sort.field], idx.names);
     const ranges = args.ranges ? Object.fromEntries(Object.entries(args.ranges).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, n]) => n !== void 0).map(([op, n]) => [op, toStr(n)]))])) : void 0;
+    if (args.summary_fields) {
+      if (new Set(args.summary_fields).size !== args.summary_fields.length) throw new OpenFunError("validation", "\u7D71\u8A08\u6B04\u4F4D\u4E0D\u53EF\u91CD\u8907\u3002");
+      const bad2 = args.summary_fields.filter((name) => !columns.some((c) => c.name === name && ["number", "integer", "long", "float", "double"].includes(c.type ?? "") && !c.multi));
+      if (bad2.length) throw new OpenFunError("validation", `\u7D71\u8A08\u6B04\u4F4D\u5FC5\u9808\u662F\u55AE\u503C\u6578\u503C\u6B04\u4F4D\uFF1A${bad2.join("\u3001")}`);
+    }
     const query = { q: args.q, qFields: args.q_fields, filters, ranges, sort: args.sort, ids: args.ids, asOf: args.as_of };
     buildRecordsQuery(query);
     const owner = session.snapshot();
     if (owner.client !== ctx.client) throw new OpenFunError("validation", "Token \u5728\u6E96\u5099\u532F\u51FA\u6642\u5DF2\u66F4\u63DB\uFF0C\u8ACB\u91CD\u65B0\u532F\u51FA\u3002");
-    return exportResponse(exports.start(owner, { detail, query, fields: args.fields, maxRows: args.max_rows }), ctx.token);
+    return exportResponse(exports.start(owner, { detail, query, fields: args.fields, summaryFields: args.summary_fields, maxRows: args.max_rows }), ctx.token);
   }));
   server.registerTool("openfun_export_status", {
     title: "\u67E5\u770B Excel \u532F\u51FA\u9032\u5EA6\u8207\u6A94\u6848",
-    description: "\u67E5\u770B openfun_export_excel \u56DE\u50B3\u7684 export_id\u3002\u56DE\u50B3\u5DF2\u53D6\u5F97\u7B46\u6578\u3001\u9810\u671F\u7E3D\u6578\u3001\u662F\u5426\u5B8C\u6574\u3001\u932F\u8AA4\u6216\u5B8C\u6210\u5F8C\u7684\u672C\u6A5F Excel \u8DEF\u5F91\u8207\u8CC7\u6E90\u9023\u7D50\uFF1B\u4E0D\u56DE\u50B3\u6574\u6279\u8A18\u9304\u3002\u6A94\u6848\u5728\u57F7\u884C\u6B64\u5916\u639B\u7684\u96FB\u8166\u4E4B\u4E0B\u8F09\uFF0FOpenFun\uFF0C\u96F2\u7AEF\u5206\u6790\u74B0\u5883\u4E0D\u4E00\u5B9A\u80FD\u8B80\u53D6\u8A72\u672C\u6A5F\u8DEF\u5F91\u3002status=running \u6642\u7E7C\u7E8C\u67E5\u8A62\uFF1Bfailed/cancelled \u4E0D\u53EF\u5BA3\u7A31\u5B8C\u6574\u3002",
+    description: "\u67E5\u770B openfun_export_excel \u56DE\u50B3\u7684 export_id\u3002\u56DE\u50B3\u5DF2\u53D6\u5F97\u7B46\u6578\u3001\u9810\u671F\u7E3D\u6578\u3001\u662F\u5426\u5B8C\u6574\u3001\u932F\u8AA4\u6216\u5B8C\u6210\u5F8C\u7684\u672C\u6A5F Excel \u8DEF\u5F91\u8207\u8CC7\u6E90\u9023\u7D50\uFF1B\u53E6\u56DE\u50B3 workbook \u7684\u4E09\u500B\u5DE5\u4F5C\u8868\u3001\u7BE9\u9078\u3001\u51CD\u7D50\u9996\u5217\uFF0C\u4EE5\u53CA summary \u7684\u7B46\u6578\u3001\u6578\u503C\u5408\u8A08\u8207\u5E73\u5747\uFF1B\u53EF\u76F4\u63A5\u64DA\u6B64\u56DE\u7B54\uFF0C\u4E0D\u56DE\u50B3\u6574\u6279\u8A18\u9304\u3002\u6A94\u6848\u5728\u57F7\u884C\u6B64\u5916\u639B\u7684\u96FB\u8166\u4E4B\u4E0B\u8F09\uFF0FOpenFun\uFF0C\u96F2\u7AEF\u5206\u6790\u74B0\u5883\u4E0D\u4E00\u5B9A\u80FD\u8B80\u53D6\u8A72\u672C\u6A5F\u8DEF\u5F91\u3002status=running \u6642\u7E7C\u7E8C\u67E5\u8A62\uFF1Bfailed/cancelled \u4E0D\u53EF\u5BA3\u7A31\u5B8C\u6574\u3002",
     inputSchema: { export_id: external_exports.string().uuid(), wait_ms: external_exports.number().int().min(0).max(2e3).default(2e3) },
     annotations: { title: "\u67E5\u770B Excel \u532F\u51FA\u9032\u5EA6\u8207\u6A94\u6848", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false }
   }, (args) => run(async (ctx) => exportResponse(await exports.status(args.export_id, args.wait_ms), ctx.token)));
