@@ -45,6 +45,10 @@ for (const host of ["claude", "codex"]) {
       const status = body(result);
       assert.equal(status.complete, true);
       assert.equal(status.exported_rows, 45);
+      assert.deepEqual(status.workbook.worksheets, ["查詢結果", "統計摘要", "來源與處理說明"]);
+      assert.equal(status.workbook.auto_filter, true);
+      assert.equal(status.workbook.frozen_header_rows, 1);
+      assert.equal(status.workbook.summary.numeric_fields[0].field, "資本額");
       assert.ok(status.file.path.startsWith(join(home, "Downloads", "OpenFun")));
       assert.ok(!status.file.path.startsWith(join(homedir(), "Downloads")), "不碰真實下載資料夾");
       assert.ok(!JSON.stringify(result).includes(GOOD_TOKEN));

@@ -13,6 +13,7 @@ import { buildRecordsQuery, type RecordsQuery } from "./query.js";
 import { getSchema, indexSchema, type DatasetDetail, type SchemaColumn } from "./schema.js";
 import type { TokenSession, TokenSnapshot } from "./session.js";
 import { type Cell, makeWorkbook } from "./xlsx.js";
+import { summarize, summaryCell, type NumericSummary } from "./export-summary.js";
 
 export const XLSX_MIME = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
 const PAGE_SIZE = 100;
@@ -24,6 +25,7 @@ export interface ExportSpec {
   query: Omit<RecordsQuery, "page" | "perPage">;
   fields?: string[];
   maxRows: number;
+  summaryFields?: string[];
 }
 interface Job {
   id: string;
@@ -37,6 +39,7 @@ interface Job {
   finishedAt?: string;
   file?: { path: string; uri: string; name: string; bytes: number; sha256: string };
   error?: string;
+  summary?: { record_count: number; numeric_fields: NumericSummary[]; average_decimal_places: number; note: string };
   done: Promise<void>;
 }
 
@@ -163,6 +166,7 @@ export class ExcelExports {
       ...(job.finishedAt ? { finished_at: job.finishedAt } : {}),
       complete: job.state === "completed",
       ...(job.file ? { file: job.file, delivery: "檔案已存到執行此外掛的電腦，家目錄的 Downloads/OpenFun（下載／OpenFun）資料夾。若聊天不支援本機檔案連結，請從該資料夾開啟；不需要終端機。" } : {}),
+      ...(job.file ? { workbook: { worksheets: ["查詢結果", "統計摘要", "來源與處理說明"], auto_filter: true, frozen_header_rows: 1, summary: job.summary } } : {}),
       ...(job.error ? { error: job.error } : {}),
       ...(job.state === "running" ? { next_step: "請用 openfun_export_status 查詢這個 export_id（wait_ms=2000），直到 completed、failed 或 cancelled；不要逐頁轉抄資料或在完成前宣稱已完整匯出。" } : {}),
       ...(job.state === "failed" || job.state === "cancelled" ? { next_step: "未完成匯出，沒有完整結果檔；解決錯誤後可重新呼叫 openfun_export_excel。" } : {}),
@@ -196,6 +200,13 @@ export class ExcelExports {
       return col;
     }) : schema;
     if (!columns.length || columns.length > 200) invalid("匯出欄位必須介於 1–200 欄。");
+    const numeric = (c: SchemaColumn) => NUMERIC.has(c.type ?? "") && !c.multi;
+    const summaryNames = spec.summaryFields ?? [...new Set([
+      ...columns.filter(numeric).map((c) => c.name),
+      ...schema.filter((c) => numeric(c) && c.name === spec.query.sort?.field).map((c) => c.name),
+    ])];
+    if (summaryNames.length > 20) invalid("數值欄位超過 20 個，請用 summary_fields 指定最多 20 個要統計的欄位。");
+    if (summaryNames.some((name) => !schema.some((c) => c.name === name && numeric(c)))) invalid("統計欄位必須是 schema 中的單值數值欄位。");
     const records: Record<string, unknown>[] = [];
     const ids = new Set<string>();
     const warnings = new Set<string>();
@@ -221,6 +232,7 @@ export class ExcelExports {
         firstId ??= id;
         const projected = Object.fromEntries(columns.map((c) => [c.name, valueAt(record, c.name)]));
         if (spec.query.sort) projected[spec.query.sort.field] = valueAt(record, spec.query.sort.field);
+        for (const name of summaryNames) projected[name] = valueAt(record, name);
         bytes += Buffer.byteLength(JSON.stringify(projected));
         if (bytes > MAX_BYTES) invalid("資料超過 32 MiB 匯出大小上限。");
         records.push(projected);
@@ -266,8 +278,15 @@ export class ExcelExports {
       ["處理方式", "外掛分頁讀取原始記錄、核對總筆數與唯一識別碼，再產生 Excel。未經聊天轉抄，未自行去重或刪除記錄。"],
       ["資料格式", "數值欄位保留為數字；識別碼與日期為文字；物件與陣列為 JSON 文字。超出 Excel 數字精度時保留文字。"],
       ["一致性限制", "已核對頁面數量、重複識別碼與前後版本，但 API 不保證查詢期間的強一致性快照；資料變動時應重新查詢。"]];
+    const numericSummary = summarize(records, summaryNames);
+    const summary = { record_count: job.rows, numeric_fields: numericSummary, average_decimal_places: 6,
+      note: "依本次完整篩選結果計算；空值不計入平均，平均四捨五入至最多六位小數。摘要是匯出當下的值，不隨之後修改 Excel 重算。" };
+    const summaryRows: Cell[][] = [["項目", "內容"], ["完整記錄筆數", job.rows], ["統計範圍", "本次全部符合查詢條件的記錄"],
+      ["計算方式", summary.note], [], ["欄位", "有值筆數", "未提供筆數", "合計", "平均"],
+      ...numericSummary.map((s) => [s.field, s.count, s.missing, summaryCell(s.sum), summaryCell(s.average)] as Cell[])];
     const workbook = makeWorkbook([
       { name: "查詢結果", filter: true, rows: [columns.map((c) => redact(c.name, token)), ...records.map((r) => columns.map((c) => cellValue(r[c.name], c, token)))] },
+      { name: "統計摘要", rows: summaryRows.map((r) => r.map((v) => typeof v === "string" ? redact(v, token) : v)) },
       { name: "來源與處理說明", rows: metadata.map((r) => r.map((v) => typeof v === "string" ? redact(v, token) : v)) },
     ]);
     this.#active(job);
@@ -289,6 +308,7 @@ export class ExcelExports {
       throw err;
     } finally { await unlink(temporary).catch(() => {}); }
     job.file = { path, uri: pathToFileURL(path).href, name, bytes: workbook.length, sha256: createHash("sha256").update(workbook).digest("hex") };
+    job.summary = summary;
     job.state = "completed";
   }
 }

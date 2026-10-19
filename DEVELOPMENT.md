@@ -56,6 +56,7 @@ src/server.ts          McpServer 與 instructions
 src/tools.ts           9 個唯讀查詢、3 個 Excel 匯出工具；Codex 另註冊 2 個 Token 工具
 src/export.ts          背景分頁匯出、完整性檢查與本機檔案交付
 src/xlsx.ts            固定格式 OOXML 工作簿產生器
+src/export-summary.ts  完整結果的十進位精確合計與六位小數平均
 src/session.ts         執行中的 Token 狀態：每次工具呼叫取一份不可變快照（client＋schema 快取），對話 Token 的驗證、取代與清除
 src/client.ts          REST 客戶端：固定路徑、Bearer header、不跟隨 redirect、逾時與大小上限、錯誤分類
 src/query.ts           查詢字串序列化（對應後端 TinyDB::parseQueryString）
@@ -258,11 +259,11 @@ Codex ZIP entry 固定標記為 Unix 一般檔案 `0100644`，不只存權限位
 
 每次上限 10000 筆、200 欄、32 MiB 已選欄位 JSON；工作不會為繞過 API 上限而自動拆分條件。network／timeout／server_error 最多重試同頁 2 次；429／額度／權限／驗證錯誤不自動重試。失敗或取消不輸出部分 Excel。Token 改變或清除後不再取新頁，舊工作狀態與資源不可由新 Token 讀取；工作歷史只存在本程序記憶體，重啟需重做。最多一項進行中工作、保留 20 項記憶體歷史。
 
-`src/xlsx.ts` 只產生固定 OOXML 工作簿（查詢結果、來源與處理說明），使用既有 `fflate` 0.8.3（改列 production dependency 並內嵌授權），沒有新增通用試算表套件。inlineStr 保留識別碼、日期與公式樣式文字，schema 數值欄保留數字；超出 Excel 精度時以文字保存。非法／過長儲存格會停止，不靜默截斷。數字在 JS 已不安全時拒絕匯出，不宣稱可還原 API 已失去的精度。
+`src/xlsx.ts` 只產生OOXML 工作簿（查詢結果、統計摘要、來源與處理說明），使用既有 `fflate` 0.8.3（改列 production dependency 並內嵌授權），沒有新增通用試算表套件。`src/export-summary.ts` 以 BigInt 進行精確十進位加總，平均四捨五入至六位；支援最多 20 個單值數值欄位，數值精度超過 1000 位時報錯，不回傳被靜默取整的統計。完成狀態含三工作表、篩選／凍結及摘要數字，聊天不需讀取本機檔案即可回答。inlineStr 保留識別碼、日期與公式樣式文字，schema 數值欄保留數字；超出 Excel 精度時以文字保存。非法／過長儲存格會停止，不靜默截斷。數字在 JS 已不安全時拒絕匯出，不宣稱可還原 API 已失去的精度。
 
 檔案由本機 server 寫到家目錄 Downloads/OpenFun，獨立隨機名稱、目錄 0700／檔案 0600，不接受任意輸出路徑；臨時檔以 exclusive 建立，完成後用 hard link 發布避免覆寫，並清理臨時檔。資源連結為 file URI；resources/read 只允許目前 Token、本程序完成的確切檔案，核對大小與 SHA-256、拒絕 symbolic link，不能讀任意路徑。此資源是本機檔案，不能假裝為雲端附件或公開下載網址。
 
-`test/export.test.mjs` 使用 9224 筆／93 頁 mock 資料，獨立 Python ZIP/XML reader 核對完整順序、識別碼與兩工作表，測試重試、缺頁、重複、總數漂移、超限、取消、Token 清除與公式樣式字串。`test/export-host.test.mjs` 實際啟動兩份打包程式，驗證本機交付與 resources/read；另以真實 Codex app-server 呼叫工具，確認完成路徑與 resource_link。全部使用隔離家目錄及假 Token。這不等於已操作 macOS／Windows GUI；點擊檔案連結的實機驗收仍待完成，本機下載資料夾為保底交付。
+`test/export.test.mjs` 使用 9224 筆／93 頁 mock 資料，獨立 Python ZIP/XML reader 核對完整順序、識別碼與三工作表，測試重試、缺頁、重複、總數漂移、超限、取消、Token 清除與公式樣式字串。`test/export-host.test.mjs` 實際啟動兩份打包程式，驗證本機交付與 resources/read；另以真實 Codex app-server 呼叫工具，確認完成路徑與 resource_link。全部使用隔離家目錄及假 Token。這不等於已操作 macOS／Windows GUI；點擊檔案連結的實機驗收仍待完成，本機下載資料夾為保底交付。
 
 ## Claude 技能上傳格式
 

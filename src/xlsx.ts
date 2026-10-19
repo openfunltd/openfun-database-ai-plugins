@@ -1,4 +1,4 @@
-/** Minimal OOXML workbook: two sheets, explicit cell types, no formulas/macros/external links. */
+/** Minimal OOXML workbook: explicit cell types, no formulas/macros/external links. */
 import { strToU8, zipSync } from "fflate";
 import { OpenFunError } from "./errors.js";
 
@@ -45,7 +45,7 @@ function cell(value: Cell, ref: string, header: boolean): string {
 }
 
 export function makeWorkbook(sheets: Sheet[]): Uint8Array {
-  if (sheets.length !== 2) throw new Error("Expected two export worksheets");
+  if (!sheets.length || sheets.length > 3) throw new Error("Expected one to three export worksheets");
   const entries: Record<string, Uint8Array> = {};
   let bytes = 0;
   const put = (name: string, text: string) => {

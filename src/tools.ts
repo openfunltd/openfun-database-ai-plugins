@@ -79,7 +79,7 @@ openfun_get_record 都支援）只取需要的欄位、或用 openfun_get_skill 
 拿到 export_id 後持續用 openfun_export_status（wait_ms=2000）查詢，直到 completed／failed／cancelled。
 完成後提供實際筆數、本機檔案路徑與資源連結；檔案在執行外掛電腦之家目錄 Downloads/OpenFun（下載／OpenFun）。
 不要把本機路徑當成雲端分析環境可讀，也不要假稱已提供聊天下載附件；若無法點開連結，請從本機下載／OpenFun 開啟。
-兩個工作表為「查詢結果」與「來源與處理說明」。欄位的數值、文字與統編前導零會保留，不執行資料中的公式。
+三個工作表為「查詢結果」「統計摘要」「來源與處理說明」。查詢結果已開啟篩選、凍結首列。用 summary_fields 指定最多 20 個數值欄位，直接從完整查詢結果計算合計、平均，不受統計 API 的範圍條件限制；結果中的 workbook.summary 可直接引用，不必讀取本機 Excel 或逐頁轉抄。欄位的數值、文字與統編前導零會保留，不執行資料中的公式。
 第一版最多 10000 筆、200 欄、32 MiB；API 本身可能有其他限制。遇到缺頁、重複或前後版本改變會失敗，不製作冒充完整的檔案。
 失敗時說明已取得／預期筆數與原因，解決後可重新匯出；中途可 openfun_cancel_export。重啟或更換 Token 後未完成工作需重做。
 匯出使用目前設定的 Token，不要求提供給程式碼或再貼一次；只在使用者要求匯出時呼叫，因為這會寫入本機檔案。
@@ -386,8 +386,8 @@ export function registerTools(server: McpServer, session: TokenSession, opts: { 
   };
   server.registerTool("openfun_export_excel", {
     title: "完整匯出查詢結果為 Excel",
-    description: "使用與查記錄相同的條件，沿用目前 Token，由本機外掛自行分頁取得全部符合資料並產生 Excel，不把記錄逐筆交給聊天轉抄。會寫入家目錄 Downloads/OpenFun；不修改歐噴資料。第一版最多 10000 筆、200 欄、32 MiB 資料；超限、缺頁、重複或資料變動會失敗，不會把部分資料當完整。回傳 export_id 後請用 openfun_export_status（wait_ms=2000）持續查進度，直到完成再提供本機路徑。處理過程可取消；重啟後未完成工作需重做。只在使用者要求匯出檔案時呼叫。",
-    inputSchema: { ...recordQueryShape, max_rows: z.number().int().min(1).max(10000).default(10000).describe("安全筆數上限；符合數超過時整項停止，不只匯出前幾筆") },
+    description: "使用與查記錄相同的條件，沿用目前 Token，由本機外掛自行分頁取得全部符合資料並產生 Excel，不把記錄逐筆交給聊天轉抄。會寫入家目錄 Downloads/OpenFun；固定三個工作表（查詢結果、統計摘要、來源與處理說明），已設篩選及凍結首列。可用 summary_fields 指定數值欄位的合計、平均；直接從完整篩選結果計算，完成狀態會回傳數字，不需要把資料轉抄進聊天或先讀取本機 Excel。不修改歐噴資料。第一版最多 10000 筆、200 欄、32 MiB 資料；超限、缺頁、重複或資料變動會失敗，不會把部分資料當完整。回傳 export_id 後請用 openfun_export_status（wait_ms=2000）持續查進度，直到完成再提供本機路徑。處理過程可取消；重啟後未完成工作需重做。只在使用者要求匯出檔案時呼叫。",
+    inputSchema: { ...recordQueryShape, summary_fields: z.array(fieldName).min(1).max(20).optional().describe("要計算合計與平均的單值數值欄位，最多 20 個；可不列入輸出欄位。未指定時統計匯出欄位及排序欄位中的數值欄位。"), max_rows: z.number().int().min(1).max(10000).default(10000).describe("安全筆數上限；符合數超過時整項停止，不只匯出前幾筆") },
     annotations: { title: "完整匯出查詢結果為 Excel", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
   }, (args) => run(async (ctx) => {
     const { data } = await ctx.client.getJson(paths.dataset(args.slug), { auth: "required" });
@@ -405,15 +405,20 @@ export function registerTools(server: McpServer, session: TokenSession, opts: { 
     }
     if (args.sort && !idx.names.has(args.sort.field) && !idx.subFilterKeys.has(args.sort.field)) throw unknownFieldError("sort", [args.sort.field], idx.names);
     const ranges = args.ranges ? Object.fromEntries(Object.entries(args.ranges).map(([k, v]) => [k, Object.fromEntries(Object.entries(v).filter(([, n]) => n !== undefined).map(([op, n]) => [op, toStr(n as string | number)]))])) : undefined;
+    if (args.summary_fields) {
+      if (new Set(args.summary_fields).size !== args.summary_fields.length) throw new OpenFunError("validation", "統計欄位不可重複。");
+      const bad = args.summary_fields.filter((name) => !columns.some((c) => c.name === name && ["number", "integer", "long", "float", "double"].includes(c.type ?? "") && !c.multi));
+      if (bad.length) throw new OpenFunError("validation", `統計欄位必須是單值數值欄位：${bad.join("、")}`);
+    }
     const query = { q: args.q, qFields: args.q_fields, filters, ranges, sort: args.sort, ids: args.ids, asOf: args.as_of };
     buildRecordsQuery(query); // Validate parameter combinations before starting a job.
     const owner = session.snapshot();
     if (owner.client !== ctx.client) throw new OpenFunError("validation", "Token 在準備匯出時已更換，請重新匯出。");
-    return exportResponse(exports.start(owner, { detail, query, fields: args.fields, maxRows: args.max_rows }), ctx.token);
+    return exportResponse(exports.start(owner, { detail, query, fields: args.fields, summaryFields: args.summary_fields, maxRows: args.max_rows }), ctx.token);
   }));
   server.registerTool("openfun_export_status", {
     title: "查看 Excel 匯出進度與檔案",
-    description: "查看 openfun_export_excel 回傳的 export_id。回傳已取得筆數、預期總數、是否完整、錯誤或完成後的本機 Excel 路徑與資源連結；不回傳整批記錄。檔案在執行此外掛的電腦之下載／OpenFun，雲端分析環境不一定能讀取該本機路徑。status=running 時繼續查詢；failed/cancelled 不可宣稱完整。",
+    description: "查看 openfun_export_excel 回傳的 export_id。回傳已取得筆數、預期總數、是否完整、錯誤或完成後的本機 Excel 路徑與資源連結；另回傳 workbook 的三個工作表、篩選、凍結首列，以及 summary 的筆數、數值合計與平均；可直接據此回答，不回傳整批記錄。檔案在執行此外掛的電腦之下載／OpenFun，雲端分析環境不一定能讀取該本機路徑。status=running 時繼續查詢；failed/cancelled 不可宣稱完整。",
     inputSchema: { export_id: z.string().uuid(), wait_ms: z.number().int().min(0).max(2000).default(2000) },
     annotations: { title: "查看 Excel 匯出進度與檔案", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
   }, (args) => run(async (ctx) => exportResponse(await exports.status(args.export_id, args.wait_ms), ctx.token)));

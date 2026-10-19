@@ -49,7 +49,7 @@ async function setup(total = 205, override) {
   };
 }
 
-test("Excel：9224 筆全部分頁、離線降冪、兩工作表、文字識別碼與資源交付", { timeout: 30000 }, async () => {
+test("Excel：9224 筆全部分頁、離線降冪、三工作表與統計、文字識別碼與資源交付", { timeout: 30000 }, async () => {
   const c = await setup(9224);
   try {
     const started = await c.start({ fields: ["統一編號", "營業人名稱", "設立日期", "備註"], sort: { field: "資本額", direction: "desc" }, ranges: { 資本額: { gt: 100 } } });
@@ -61,6 +61,12 @@ test("Excel：9224 筆全部分頁、離線降冪、兩工作表、文字識別�
     assert.equal(status.expected_rows, 9224);
     assert.equal(status.exported_rows, 9224);
     assert.equal(status.fetched_pages, 93);
+    assert.deepEqual(status.workbook.worksheets, ["查詢結果", "統計摘要", "來源與處理說明"]);
+    assert.equal(status.workbook.auto_filter, true);
+    assert.equal(status.workbook.frozen_header_rows, 1);
+    assert.equal(status.workbook.summary.record_count, 9224);
+    assert.deepEqual(status.workbook.summary.numeric_fields, [{ field: "資本額", count: 9224, missing: 0,
+      sum: "42545700000", average: "4612500" }]);
     assert.ok(status.file.path.startsWith(c.directory));
     assert.ok(!JSON.stringify(result).includes(GOOD_TOKEN));
     const link = result.content.find((v) => v.type === "resource_link");
@@ -81,7 +87,7 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  assert z.testzip() is None
  for n in z.namelist(): E.fromstring(z.read(n))
  wb=E.fromstring(z.read('xl/workbook.xml'))
- assert [s.attrib['name'] for s in wb.find('s:sheets',ns)] == ['查詢結果','來源與處理說明']
+ assert [s.attrib['name'] for s in wb.find('s:sheets',ns)] == ['查詢結果','統計摘要','來源與處理說明']
  sheet=E.fromstring(z.read('xl/worksheets/sheet1.xml'))
  rows=sheet.findall('s:sheetData/s:row',ns)
  assert len(rows)==9225
@@ -91,6 +97,13 @@ with zipfile.ZipFile(sys.argv[1]) as z:
  assert sheet.find('s:sheetViews/s:sheetView/s:pane',ns).attrib['state']=='frozen'
  assert all(c.attrib.get('t')=='inlineStr' for r in rows for c in r if c.attrib['r'].startswith('A'))
  assert rows[-1][1].find('s:is/s:t',ns).text.startswith('=HYPERLINK')
+ summary=E.fromstring(z.read('xl/worksheets/sheet2.xml'))
+ summary_rows=summary.findall('s:sheetData/s:row',ns)
+ assert int(summary_rows[1][1].find('s:v',ns).text)==9224
+ capital=summary_rows[6]
+ assert capital[0].find('s:is/s:t',ns).text=='資本額'
+ assert int(capital[3].find('s:v',ns).text)==9224*9225//2*1000
+ assert int(capital[4].find('s:v',ns).text)==(9224+1)*1000//2
 `, status.file.path], { encoding: "utf8" });
     assert.equal(python.status, 0, python.stderr);
     const requests = c.api.requests.filter((r) => r.path === path);
@@ -100,6 +113,26 @@ with zipfile.ZipFile(sys.argv[1]) as z:
       assert.equal(q.sort, "統一編號<");
       assert.equal(q.__range__.資本額.gt, "100");
       assert.equal(r.headers.authorization, `Bearer ${GOOD_TOKEN}`);
+    }
+  } finally { await c.close(); }
+});
+
+test("Excel：可指定未輸出欄位做統計，不把資料交回聊天", async () => {
+  const c = await setup(3);
+  try {
+    const result = json(await c.finish(await c.start({ fields: ["統一編號"], summary_fields: ["資本額"] })));
+    assert.equal(result.complete, true);
+    assert.deepEqual(result.workbook.summary.numeric_fields, [{ field: "資本額", count: 3, missing: 0, sum: "6000", average: "2000" }]);
+    assert.equal(result.records, undefined);
+    const z = unzipSync(await readFile(result.file.path));
+    const detail = strFromU8(z["xl/worksheets/sheet1.xml"]);
+    assert.match(detail, /autoFilter ref="A1:A4"/);
+    assert.match(detail, /state="frozen"/);
+    assert.ok(!detail.includes("資本額"));
+    assert.match(strFromU8(z["xl/worksheets/sheet2.xml"]), /6000/);
+    assert.match(strFromU8(z["xl/worksheets/sheet3.xml"]), /來源與授權/);
+    for (const summary_fields of [["營業人名稱"], ["不存在"], ["資本額", "資本額"]]) {
+      assert.equal((await c.start({ summary_fields })).isError, true);
     }
   } finally { await c.close(); }
 });
