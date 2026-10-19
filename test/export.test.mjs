@@ -25,7 +25,7 @@ async function setup(total = 205, override) {
     const page = Number(q.page), size = Number(q.per_page);
     if (override?.({ req, res, q, page, size, api })) return;
     const start = (page - 1) * size;
-    const records = Array.from({ length: Math.max(0, Math.min(size, total - start)) }, (_, n) => record(start + n + 1));
+    const records = Array.from({ length: Math.max(0, Math.min(size, total - start)) }, (_, n) => record(q.sort?.endsWith(">") ? total - start - n : start + n + 1));
     sendMock(res, 200, { total, page, per_page: size, records });
   });
   const server = createServer({ baseUrl: api.url, token: GOOD_TOKEN, tokenProblem: null, timeoutMs: 2000, isDevOverride: true }, {
@@ -97,12 +97,33 @@ with zipfile.ZipFile(sys.argv[1]) as z:
     assert.equal(requests.length, 94, "93 data pages and one final consistency check");
     for (const r of requests) {
       const q = parseQueryString(r.rawQuery);
-      assert.equal(q.sort, "統一編號>");
+      assert.equal(q.sort, "統一編號<");
       assert.equal(q.__range__.資本額.gt, "100");
       assert.equal(r.headers.authorization, `Bearer ${GOOD_TOKEN}`);
     }
   } finally { await c.close(); }
 });
+
+for (const direction of ["asc", "desc"]) {
+  test(`Excel：${direction} 完成檔按金額排序，不沿用分頁擷取的識別碼順序`, async () => {
+    const data = Array.from({ length: 105 }, (_, i) => ({ ...record(i + 1), 資本額: String(((i + 1) * 37) % 1000) }));
+    const c = await setup(105, ({ res, page, size }) => {
+      sendMock(res, 200, { total: data.length, page, per_page: size, records: data.slice((page - 1) * size, page * size) });
+      return true;
+    });
+    try {
+      const result = json(await c.finish(await c.start({ fields: ["統一編號", "資本額"], sort: { field: "資本額", direction } })));
+      assert.equal(result.complete, true);
+      assert.equal(result.exported_rows, 105);
+      const z = unzipSync(await readFile(result.file.path));
+      const xml = strFromU8(z["xl/worksheets/sheet1.xml"]);
+      const actual = [...xml.matchAll(/<c r="B\d+" s="2"><v>([^<]+)<\/v>/g)].map((m) => Number(m[1]));
+      const expected = data.map((r) => Number(r.資本額)).sort((a, b) => direction === "asc" ? a - b : b - a);
+      assert.deepEqual(actual, expected);
+      assert.equal(c.api.requests.filter((r) => r.path === path).length, 3, "兩個資料頁與一次完成前核對");
+    } finally { await c.close(); }
+  });
+}
 
 test("Excel：數字、前導零、日期、物件與空值依型別保留", async () => {
   const c = await setup(1);

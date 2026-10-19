@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";
 import { InMemoryTransport } from "@modelcontextprotocol/sdk/inMemory.js";
 import { createServer } from "../build/lib/server.js";
-import { COMPANY_SLUG, EXPIRED_TOKEN, GOOD_TOKEN, startMockApi } from "./helpers/mock-api.mjs";
+import { COMPANY_SLUG, EXPIRED_TOKEN, GOOD_TOKEN, sendMock, startMockApi } from "./helpers/mock-api.mjs";
 import { parseQueryString } from "./helpers/php-parse.mjs";
 
 let api;
@@ -215,7 +215,7 @@ test("query_records：序列化、分頁說明、來源、Token 不外洩", asyn
       縣市: ["臺北市", "新北市"],
       "營業地址.縣市": "臺北市",
       __range__: { 資本額: { gte: "100", lt: "5000000" }, 設立日期: { gte: "2024-01-01" } },
-      sort: "資本額<",
+      sort: "資本額>",
       page: "2",
       per_page: "20",
     });
@@ -232,6 +232,43 @@ test("query_records：序列化、分頁說明、來源、Token 不外洩", asyn
     await close();
   }
 });
+
+for (const [direction, expected] of [
+  ["desc", [1000, 800, 100, 75, 12, 8]],
+  ["asc", [8, 12, 75, 100, 800, 1000]],
+]) {
+  test(`query_records：${direction} 依實際後端契約排序全部資料再分頁`, async () => {
+    // Backend source: openfun-tinydb DatasetsController.php, blob
+    // a451bddec65a0b80d6f9e57eaae157c4b8ffb44d lines 555–565: > desc, < asc.
+    // Deliberately unsorted/string numeric input catches page-only reversal and lexical sort.
+    const raw = [100, 8, 1000, 75, 800, 12].map((n, i) => ({ 統一編號: String(i + 1), 資本額: String(n) }));
+    const path = `/api/v1/datasets/${COMPANY_SLUG}/records`;
+    api.setOverride(path, (req, res, { rawQuery }) => {
+      const q = parseQueryString(rawQuery);
+      const order = q.sort.endsWith(">") ? -1 : 1;
+      const sorted = [...raw].sort((a, b) => order * (Number(a.資本額) - Number(b.資本額)));
+      const page = Number(q.page), size = Number(q.per_page);
+      sendMock(res, 200, { total: raw.length, page, per_page: size, records: sorted.slice((page - 1) * size, page * size) });
+    });
+    const c = await connect();
+    try {
+      const actual = [];
+      for (let page = 1; page <= 3; page++) {
+        const response = await c.client.callTool({ name: "openfun_query_records", arguments: {
+          slug: COMPANY_SLUG, sort: { field: "資本額", direction }, page, per_page: 2,
+        } });
+        assert.equal(response.isError, undefined, textOf(response));
+        const content = response.content.find((c) => c.type === "text" && c.text.includes('"records":')).text;
+        const body = JSON.parse(content.slice(content.indexOf("\n") + 1, content.lastIndexOf("\n")));
+        assert.equal(body.total, 6);
+        const values = body.records.map((r) => Number(r.資本額));
+        assert.deepEqual(values, expected.slice((page - 1) * 2, page * 2));
+        actual.push(...values);
+      }
+      assert.deepEqual(actual, expected);
+    } finally { await c.close(); api.clearOverrides(); }
+  });
+}
 
 test("query_records：查無資料、未知欄位、fields 投影、API 警告", async () => {
   const { client, close } = await connect();

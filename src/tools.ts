@@ -58,7 +58,7 @@ slug 一律從搜尋結果取得，不要猜。
 - q_fields：{"欄位":"文字"} 指定欄位全文搜尋（REST 的 q[欄位]=），不可與 q 同時用
 - filters：{"欄位":"值"} 或 {"欄位":["值1","值2"]} 精確比對（多值為 OR，REST 為重複 key）
 - ranges：{"欄位":{"gte":"2024-01-01","lt":"2025-01-01"}}（REST 的 欄位>=值、欄位<值）
-- sort：{"field":"資本額","direction":"desc"}（REST 的 sort=資本額<）
+- sort：{"field":"資本額","direction":"desc"}（REST 的 sort=資本額>）
 - page / per_page：分頁；total 是符合條件的總筆數，一頁的筆數不是全部結果
 - fields：只在回應中顯示指定欄位（由本擴充套件在本機篩選，API 仍回傳完整記錄）
 

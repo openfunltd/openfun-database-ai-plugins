@@ -45,8 +45,8 @@ test("排序、分頁、_as_of、_ids", () => {
     asOf: "2024-01-01",
     ids: ["A001", "A002"],
   });
-  assert.deepEqual(roundTrip(qs), { sort: "資本額<", page: "3", per_page: "50", _as_of: "2024-01-01", _ids: "A001,A002" });
-  assert.equal(roundTrip(buildRecordsQuery({ sort: { field: "資本額", direction: "asc" } })).sort, "資本額>");
+  assert.deepEqual(roundTrip(qs), { sort: "資本額>", page: "3", per_page: "50", _as_of: "2024-01-01", _ids: "A001,A002" });
+  assert.equal(roundTrip(buildRecordsQuery({ sort: { field: "資本額", direction: "asc" } })).sort, "資本額<");
 });
 
 test("精確篩選的值含有 >= 也不會被誤判為範圍", () => {

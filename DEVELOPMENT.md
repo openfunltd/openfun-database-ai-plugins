@@ -90,7 +90,7 @@ test/                  node:test 測試與本機 mock API
 
 序列化規則：
 - 精確比對 `欄位=值`，多值用重複 key；`q[欄位]=值`；範圍 `欄位%3E=值`（後端先 urldecode 整段再比對 `>= <= > <`）；
-  排序 `sort=欄位<`（降冪）／`sort=欄位>`（升冪）。用 `encodeURIComponent`，不用 `URLSearchParams`（空白會變 `+`）。
+  排序 `sort=欄位>`（降冪）／`sort=欄位<`（升冪）。用 `encodeURIComponent`，不用 `URLSearchParams`（空白會變 `+`）。
 - 後端 `q` 與範圍值以 `substr(…, 0, 200)` 位元組截斷，工具會在超過時直接報錯。
 - `q` 與 `q[欄位]` 不能並用（後端會覆蓋）。
 - `/records` 對未知欄位只回 warning，範圍條件的未知欄位則默默忽略；`/agg` 只接受頂層、非 text 欄位的精確篩選，
@@ -269,3 +269,9 @@ Codex ZIP entry 固定標記為 Unix 一般檔案 `0100644`，不只存權限位
 `npm run pack:skill` 產生 `dist/openfun-chat-skill.zip`，直接重用 Claude plugin 的 SKILL.md，不另存一份指引。ZIP 只包含 `openfun-data/SKILL.md`、`openfun-data/LICENSE`；符合單一頂層資料夾、SKILL.md 位於該資料夾直下、不含 `.claude-plugin/plugin.json` 的 Skills 上傳格式。保留原 Plugin ZIP 供 Plugins 上傳，兩種格式不可混用。依據：[官方結構](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)、[上傳入口](https://support.claude.com/en/articles/12512180-use-skills-in-claude)。
 
 `test/skill-package.test.mjs` 重現使用者回報的三項格式限制，以獨立 Python ZIP reader 檢查，另驗證與 plugin 共用原文、無憑證及打包可重現。這些是結構檢查，不宣稱已操作 Claude Desktop 的上傳畫面。
+
+## 排序方向契約
+
+2026-10-19 核對 `openfunltd/openfun-tinydb` 最新 `controllers/DatasetsController.php`（blob `a451bddec65a0b80d6f9e57eaae157c4b8ffb44d`）第 555–565 行：尾碼 `>` 對應 desc、`<` 對應 asc。當天公開 `/api-docs.md` 的方向說明相反，因此不能依該說明建立序列化預期。外掛對外參數仍為 `asc`（由小到大）、`desc`（由大到小），只在 HTTP 邊界轉成後端語法。範圍篩選的大小比較運算子不受影響。
+
+`test/tools.test.mjs` 使用依此後端契約實作的模擬排序，先排序完整資料再分頁，核對升／降冪的第一頁與後續頁面。`test/export.test.mjs` 核對最終 Excel 的升／降冪，並使用識別碼順序與金額順序不同的多頁資料，確認匯出會在收齊後依使用者排序。這些測試未使用正式 Token，不等於已用正式資料重跑 9,224 筆查詢。

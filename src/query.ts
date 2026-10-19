@@ -6,7 +6,7 @@
  * - 範圍：欄位>=值、欄位<=值、欄位>值、欄位<值
  *   後端先 urldecode 整段再比對運算子，所以運算子以 %3E/%3C 編碼也能正確解析，
  *   且不會被 fetch 的 URL 解析器再改寫。
- * - 排序：sort=欄位>（升冪）或 sort=欄位<（降冪）
+ * - 排序：sort=欄位<（升冪）或 sort=欄位>（降冪）
  *
  * 不使用 URLSearchParams（會把空白編成 +）或 PHP http_build_query 風格的 a[0]=。
  */
@@ -155,7 +155,7 @@ export function buildRecordsQuery(query: RecordsQuery): string {
   }
   if (query.sort) {
     validateFieldName(query.sort.field, "sort");
-    parts.push(`sort=${enc(query.sort.field + (query.sort.direction === "asc" ? ">" : "<"))}`);
+    parts.push(`sort=${enc(query.sort.field + (query.sort.direction === "asc" ? "<" : ">"))}`);
   }
   if (query.page !== undefined) parts.push(`page=${query.page}`);
   if (query.perPage !== undefined) parts.push(`per_page=${query.perPage}`);
