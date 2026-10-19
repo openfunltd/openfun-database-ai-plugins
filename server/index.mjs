@@ -37528,7 +37528,7 @@ function buildRecordsQuery(query) {
   }
   if (query.sort) {
     validateFieldName(query.sort.field, "sort");
-    parts.push(`sort=${enc(query.sort.field + (query.sort.direction === "asc" ? ">" : "<"))}`);
+    parts.push(`sort=${enc(query.sort.field + (query.sort.direction === "asc" ? "<" : ">"))}`);
   }
   if (query.page !== void 0) parts.push(`page=${query.page}`);
   if (query.perPage !== void 0) parts.push(`per_page=${query.perPage}`);
@@ -38792,7 +38792,7 @@ slug \u4E00\u5F8B\u5F9E\u641C\u5C0B\u7D50\u679C\u53D6\u5F97\uFF0C\u4E0D\u8981\u7
 - q_fields\uFF1A{"\u6B04\u4F4D":"\u6587\u5B57"} \u6307\u5B9A\u6B04\u4F4D\u5168\u6587\u641C\u5C0B\uFF08REST \u7684 q[\u6B04\u4F4D]=\uFF09\uFF0C\u4E0D\u53EF\u8207 q \u540C\u6642\u7528
 - filters\uFF1A{"\u6B04\u4F4D":"\u503C"} \u6216 {"\u6B04\u4F4D":["\u503C1","\u503C2"]} \u7CBE\u78BA\u6BD4\u5C0D\uFF08\u591A\u503C\u70BA OR\uFF0CREST \u70BA\u91CD\u8907 key\uFF09
 - ranges\uFF1A{"\u6B04\u4F4D":{"gte":"2024-01-01","lt":"2025-01-01"}}\uFF08REST \u7684 \u6B04\u4F4D>=\u503C\u3001\u6B04\u4F4D<\u503C\uFF09
-- sort\uFF1A{"field":"\u8CC7\u672C\u984D","direction":"desc"}\uFF08REST \u7684 sort=\u8CC7\u672C\u984D<\uFF09
+- sort\uFF1A{"field":"\u8CC7\u672C\u984D","direction":"desc"}\uFF08REST \u7684 sort=\u8CC7\u672C\u984D>\uFF09
 - page / per_page\uFF1A\u5206\u9801\uFF1Btotal \u662F\u7B26\u5408\u689D\u4EF6\u7684\u7E3D\u7B46\u6578\uFF0C\u4E00\u9801\u7684\u7B46\u6578\u4E0D\u662F\u5168\u90E8\u7D50\u679C
 - fields\uFF1A\u53EA\u5728\u56DE\u61C9\u4E2D\u986F\u793A\u6307\u5B9A\u6B04\u4F4D\uFF08\u7531\u672C\u64F4\u5145\u5957\u4EF6\u5728\u672C\u6A5F\u7BE9\u9078\uFF0CAPI \u4ECD\u56DE\u50B3\u5B8C\u6574\u8A18\u9304\uFF09
 
