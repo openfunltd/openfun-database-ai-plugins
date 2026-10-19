@@ -5,7 +5,7 @@
 安裝擴充套件、貼上 Token，就能在 Claude Desktop 的**一般聊天**中用中文查詢 [歐噴資料庫](https://data.openfun.tw)。
 
 - 不需要終端機，不需要安裝 Node.js，也不用手動修改 JSON 設定檔
-- 所有功能都是**唯讀**，不會修改任何資料
+- 查詢不會修改歐噴資料；Excel 匯出會寫入本機下載資料夾
 - 支援 **Claude Desktop for macOS 與 Windows**（Claude Desktop 沒有 Linux 版）
 
 ## 兩個檔案，用途不同
@@ -56,13 +56,18 @@
 
 Token 會由 Claude Desktop 加密存放在系統的憑證儲存區（macOS「鑰匙圈」、Windows「認證管理員」）。
 
-## 3b.（可選）上傳聊天指引 plugin
+## 3b.（可選）安裝 openfun-chat-plugin.zip 聊天指引
 
-第 3 步完成就能查資料，擴充套件已提供查詢工具與使用說明。這一步只補充聊天使用指引，不影響是否能連線查詢。
+這份 ZIP 教 Claude 何時使用歐噴工具、先確認欄位再查詢、附上來源與說明限制，以及如何使用 Excel 匯出。**第 3 步的 `.mcpb` 已包含查詢工具與使用說明，只安裝它就能查資料；ZIP 是補充指引，不能單獨查詢，也不需要填 Token。**
 
-1. 在 Claude 打開 **Customize > Plugins**，選擇上傳 plugin，選 `openfun-chat-plugin.zip`。
-2. 這份 plugin 不會要求 Token，也不會單獨提供查詢功能；它讓 Claude 在你問台灣公共資料時，記得使用第 3 步安裝的擴充套件、附上來源並說明限制。
-3. 如果 Claude 說找不到歐噴資料庫的工具，代表第 3 步的擴充套件還沒安裝、沒填 Token，或在聊天的「+」> Connectors 中被關閉。
+1. 下載 `openfun-chat-plugin.zip`，**保留 ZIP，不要解壓縮**。
+2. 在 Claude Desktop 左側開啟 **Customize（自訂）> Plugins（外掛程式）**，按 **Add（新增）> Upload plugin（上傳外掛程式）**，上傳這份 ZIP。
+3. 確認「**歐噴資料庫聊天指引**」已啟用。
+4. 開新聊天，直接提問；也可以在輸入框輸入 `/`，從清單選取歐噴的 `openfun-data` 指引，再輸入問題。
+
+這份 ZIP 請上傳到 **Plugins**，不要當作聊天附件，也不要裝到 **Settings > Extensions**。Plugins 需 Claude 付費方案；操作依 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
+
+如果 Claude 說找不到歐噴資料庫的工具，請檢查第 3 步的擴充套件是否啟用，以及聊天的「+」> Connectors 中是否開啟「歐噴資料庫」。只有 Token 驗證成功，才算確認能查資料。
 
 ## 4. 確認設定成功
 

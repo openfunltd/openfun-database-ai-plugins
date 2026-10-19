@@ -12,11 +12,11 @@ AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，�
 
 ## 下載檔案（v0.1.0 測試版）
 
-| 平台 | 下載 |
-|---|---|
-| Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) |
-| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) |
-| Codex（供更新連線程式使用） | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) |
+| 平台 | 下載 | 下載後怎麼用 |
+|---|---|---|
+| Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) | 雙擊安裝，在擴充套件設定填入 Token |
+| Claude Desktop（可選聊天指引） | [openfun-chat-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-chat-plugin.zip) | 保留 ZIP，在 Claude 的 Customize > Plugins 上傳，詳見下方說明 |
+| Codex（供更新連線程式使用） | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) | 交給 Codex 更新本機連線程式；首次安裝依下方市集步驟操作 |
 
 完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>
 Claude 請下載上面的安裝檔，不要使用 GitHub 自動產生的「Source code (zip)」。Codex 請依下方市集步驟安裝。
@@ -41,10 +41,21 @@ Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取
 
 1. 雙擊 `openfun-claude-extension.mcpb`（或拖曳到 Claude Desktop 視窗，或從 **Settings > Extensions > Advanced settings > Install Extension…** 選擇）。
 2. 按 **Install**，在「歐噴 API Token」欄位貼上 Token，儲存並確認已啟用。
-3. （可選）到 **Customize > Plugins** 上傳 `openfun-chat-plugin.zip`，補充聊天使用指引。**完成前兩步就能查資料**，擴充套件已包含查詢工具與使用說明；這份 ZIP 單獨安裝不能查資料。
+3. （可選）安裝 `openfun-chat-plugin.zip` 聊天使用指引，操作見下方小節。**完成前兩步就能查資料**。
 4. 開新聊天，問：「請檢查歐噴資料庫的設定是否正常」。
 
 逐步教學、聊天示範、故障排除與隱私說明：[docs/CLAUDE_DESKTOP.md](docs/CLAUDE_DESKTOP.md)。
+
+### openfun-chat-plugin.zip 下載後怎麼用？
+
+這份 ZIP 是給 Claude 閱讀的**使用指引**：教它何時使用歐噴工具、先確認欄位再查詢，以及如何附上來源、說明限制與匯出 Excel。真正負責連線查詢的是上面的 `.mcpb`；ZIP 不含查詢程式，也沒有 Token 設定欄位。**只裝 `.mcpb` 就能查資料，ZIP 是可選的補充指引。**
+
+1. 下載 `openfun-chat-plugin.zip`，**保留 ZIP，不要解壓縮**。
+2. 在 Claude Desktop 左側開啟 **Customize（自訂）> Plugins（外掛程式）**，按 **Add（新增）> Upload plugin（上傳外掛程式）**，上傳這份 ZIP。
+3. 安裝後確認「**歐噴資料庫聊天指引**」已啟用。
+4. 開新聊天，直接提問；若要手動選用指引，在輸入框輸入 `/`，從清單選取歐噴的 `openfun-data` 指引。確認連線可問：「請檢查歐噴資料庫的設定是否正常」。
+
+ZIP 請上傳到 **Plugins**，不要當作聊天附件，也不要裝到 **Settings > Extensions**。Plugins 需 Claude 付費方案；安裝及選用指引的操作可參考 [Claude 官方說明](https://support.claude.com/en/articles/13837440-use-plugins-in-claude)。
 
 ## Codex 安裝
 
