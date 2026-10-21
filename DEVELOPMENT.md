@@ -1,32 +1,19 @@
 # 開發說明
 
-## 架構選擇
+## 架構
 
-官方 `mcp-server-dev` skill 建議：只呼叫雲端 API 的服務優先做 remote MCP server。
-本專案仍選擇 **MCPB（本機 stdio 擴充套件）**，原因是交付需求：
+Claude Desktop 的 MCPB 與 Codex plugin 共用 `src/` 的 MCP 伺服器、查詢邏輯和 Excel 匯出工具。Claude 的使用指引由 `src/tools.ts` 的 server instructions、工具描述與 `openfun_guide` 提供；Token 由宿主的設定畫面注入。
 
-- 對象是只用 Claude Desktop 一般 Chat 的非工程師，要「開一個安裝檔、貼 Token」就能用；
-- 不修改歐噴後端，也不依賴現有 `/mcp`（`guide` 回 500、`search` 未轉送 Token、
-  PHP `http_build_query` 把 `{"金額>=":100}` 編成 `金額>==100`、陣列變成 `a[0]=` 等問題）；
-- Token 由 Claude Desktop 以 `sensitive: true` 存入 OS 憑證儲存區，不放在 URL。
-
-之後若歐噴提供支援 OAuth 的 remote MCP，網頁版與手機版 Claude 也能使用，屆時可再評估。
+網站的遠端 `/mcp` 由網站專案維護，使用不同的工具介面，網頁版目前的驗證與功能限制見 [網頁版說明](docs/CLAUDE_WEB.md)。
 
 ## 交付物
 
 | 產物 | 來源 | 指令 |
 |---|---|---|
 | `dist/openfun-claude-extension.mcpb` | `manifest.json`、`src/` | `npm run pack:mcpb` |
-| `dist/openfun-chat-skill.zip` | 與 plugin 共用 `plugin/skills/openfun-data/SKILL.md`；單一 `openfun-data/` 根資料夾，只有 SKILL.md 與 LICENSE | `npm run pack:skill` |
-| `dist/openfun-chat-plugin.zip` | `plugin/`（`.claude-plugin/plugin.json`、`skills/openfun-data/SKILL.md`、README、LICENSE） | `npm run pack:plugin` |
 | `dist/openfun-codex-plugin.zip` | `codex/`（plugin.json、mcp.json、marketplace、skill、README）＋ 打包的 `server/index.mjs` | `npm run pack:codex` |
 
-`npm run pack:claude` 產生 Claude 的 MCPB 與聊天指引，`npm run pack:codex` 產生 Codex plugin；`npm run pack` 四份都產生。companion plugin 只含 skill：官方說明 plugin 的本機 MCP server 只在 Cowork 與
-Claude Code 執行、不在 chat，所以不在 plugin.json 宣告 `mcpServers`／`userConfig`，也不把 `.mcpb` 內嵌進 ZIP。
-`scripts/pack-plugin.mjs` 用 fflate 只封裝 allowlist 檔案，ZIP 根目錄即 plugin 根目錄，時間戳固定可重現；
-plugin.json 版本必須與 `package.json` 相同。`npm run validate:plugin` 執行 `claude plugin validate --strict plugin`
-（需要 Claude Code CLI）。注意：目前 CLI（2.1.289）只驗證 plugin.json，不檢查 SKILL.md 內容，
-skill frontmatter 由 `test/plugin.test.mjs` 檢查。
+`npm run pack:claude` 產生 Claude 的 MCPB，`npm run pack:codex` 產生 Codex plugin；`npm run pack` 產生兩份安裝包。
 
 ## 需求
 
@@ -41,8 +28,8 @@ npm ci              # 依 package-lock.json 安裝
 npm run build       # tsc 型別檢查與編譯到 build/lib，esbuild 打包到 build/bundle/server/index.mjs
 npm run validate    # 以 vendored 官方 schema v0.3 驗證 manifest.json（離線）
 npm run validate:codex  # 驗證 build/codex-plugin（vendored Agent Plugins schema + Codex 規則）
-npm run pack        # 產生四份產物
-npm test            # pack 四份產物後執行全部測試（含解壓 .mcpb 的 stdio 測試、plugin ZIP 檢查與 Codex 隔離安裝測試）
+npm run pack        # 產生兩份安裝包
+npm test            # 打包後執行全部測試（含 MCPB stdio 與 Codex 隔離安裝測試）
 npm run test:unit   # 只跑單元與工具測試（需先 build）
 npm run icon        # 重新產生 icon.png
 ```
@@ -229,7 +216,7 @@ MCP env Token 可以通過設定檢查且不回顯；全部使用隔離家目錄
 
 ## 發版與打包注意事項
 
-- 版本號需同步：`package.json`、`manifest.json`、`src/version.ts`、`plugin/.claude-plugin/plugin.json`、`codex/plugin.json`（測試會檢查）。
+- 版本號需同步：`package.json`、`manifest.json`、`src/version.ts`、`codex/plugin.json`（測試會檢查）。
 - `server/index.mjs` 內嵌所有執行期依賴（MCP SDK、zod、ajv 等），安裝包內沒有 `node_modules`；
   第三方授權由 build 自動收集到安裝包內的 `THIRD_PARTY_LICENSES.md`。
 - 安裝包**未簽章**，本專案也**不提供簽章功能**（Claude Desktop 可安裝未簽章的 .mcpb）。
@@ -264,12 +251,6 @@ Codex ZIP entry 固定標記為 Unix 一般檔案 `0100644`，不只存權限位
 檔案由本機 server 寫到家目錄 Downloads/OpenFun，獨立隨機名稱、目錄 0700／檔案 0600，不接受任意輸出路徑；臨時檔以 exclusive 建立，完成後用 hard link 發布避免覆寫，並清理臨時檔。資源連結為 file URI；resources/read 只允許目前 Token、本程序完成的確切檔案，核對大小與 SHA-256、拒絕 symbolic link，不能讀任意路徑。此資源是本機檔案，不能假裝為雲端附件或公開下載網址。
 
 `test/export.test.mjs` 使用 9224 筆／93 頁 mock 資料，獨立 Python ZIP/XML reader 核對完整順序、識別碼與三工作表，測試重試、缺頁、重複、總數漂移、超限、取消、Token 清除與公式樣式字串。`test/export-host.test.mjs` 實際啟動兩份打包程式，驗證本機交付與 resources/read；另以真實 Codex app-server 呼叫工具，確認完成路徑與 resource_link。全部使用隔離家目錄及假 Token。這不等於已操作 macOS／Windows GUI；點擊檔案連結的實機驗收仍待完成，本機下載資料夾為保底交付。
-
-## Claude 技能上傳格式
-
-`npm run pack:skill` 產生 `dist/openfun-chat-skill.zip`，直接重用 Claude plugin 的 SKILL.md，不另存一份指引。ZIP 只包含 `openfun-data/SKILL.md`、`openfun-data/LICENSE`；符合單一頂層資料夾、SKILL.md 位於該資料夾直下、不含 `.claude-plugin/plugin.json` 的 Skills 上傳格式。保留原 Plugin ZIP 供 Plugins 上傳，兩種格式不可混用。依據：[官方結構](https://support.claude.com/en/articles/12512198-how-to-create-custom-skills)、[上傳入口](https://support.claude.com/en/articles/12512180-use-skills-in-claude)。
-
-`test/skill-package.test.mjs` 重現使用者回報的三項格式限制，以獨立 Python ZIP reader 檢查，另驗證與 plugin 共用原文、無憑證及打包可重現。這些是結構檢查，不宣稱已操作 Claude Desktop 的上傳畫面。
 
 ## 排序方向契約
 
