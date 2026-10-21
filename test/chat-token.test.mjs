@@ -413,8 +413,7 @@ test("文件：下載連結版本一致；Codex 說明畫面安裝與兩種 Toke
     assert.doesNotMatch(md, /限縮|最小權限/, name);
   }
   assert.ok(docs["docs/CLAUDE_DESKTOP.md"].includes(`download/v${version}/openfun-claude-extension.mcpb`));
-  for (const f of ["openfun-claude-extension.mcpb", "openfun-codex-plugin.zip"]) assert.ok(docs["README.md"].includes(`download/v${version}/${f}`));
-  assert.ok(docs["codex/README.md"].includes(`download/v${version}/openfun-codex-plugin.zip`));
+  assert.ok(docs["README.md"].includes(`download/v${version}/openfun-claude-extension.mcpb`));
   // 安裝以畫面為主；CLI 安裝與畫面環境變數／對話 Token 說明一致。
   const install = /codex plugin marketplace add [^\n]+\n\s*codex plugin add openfun-data@openfun\n/;
   for (const name of ["README.md", "codex/README.md"]) {

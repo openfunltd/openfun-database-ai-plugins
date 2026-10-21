@@ -12,10 +12,10 @@ AI 會搜尋資料集、閱讀欄位說明、查詢資料，並在回答中附�
 
 ## 下載檔案（v0.1.0 測試版）
 
-| 平台 | 下載 | 下載後怎麼用 |
+| 平台 | 取得方式 | 安裝方式 |
 |---|---|---|
 | Claude Desktop（必要） | [openfun-claude-extension.mcpb](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-claude-extension.mcpb) | 雙擊安裝，在擴充套件設定填入 Token |
-| Codex（供更新連線程式使用） | [openfun-codex-plugin.zip](https://github.com/openfunltd/openfun-database-ai-plugins/releases/download/v0.1.0/openfun-codex-plugin.zip) | 交給 Codex 更新本機連線程式；首次安裝依下方市集步驟操作 |
+| Codex | [GitHub 市集](#codex-安裝) | 從桌面版新增市集並安裝 |
 
 完整發布頁：<https://github.com/openfunltd/openfun-database-ai-plugins/releases/tag/v0.1.0>
 Claude 請下載上面的安裝檔，不要使用 GitHub 自動產生的「Source code (zip)」。Codex 請依下方市集步驟安裝。
@@ -46,9 +46,9 @@ Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取
 
 ## Codex 安裝
 
-適用本機 Codex 桌面版，需要 **Node.js 18 以上**。安裝外掛後，還需要完成連線設定，才能開始查詢。
+需要 Node.js 18 以上，並使用本機對話。
 
-1. 開啟「外掛程式」→「新增」→「新增市集」。
+1. 點左側「外掛程式」→「新增」→「新增市集」。
 2. 填入以下內容，按「新增市集」：
 
    | 欄位 | 填入 |
@@ -57,20 +57,19 @@ Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取
    | Git 參照 | `codex-marketplace` |
    | 稀疏路徑 | 留空 |
 
-3. 在外掛搜尋框搜尋「歐噴資料庫」，找到後點進去，按「安裝外掛程式」。
-4. **設定連線（必要）**：開啟本機對話，在訊息輸入框輸入 `@`，接著輸入「歐噴資料庫」，從跳出的清單點選它。確認出現外掛標籤後，送出：
+3. 搜尋「歐噴資料庫」，點進去，按「安裝外掛程式」。
+4. 開啟本機新對話，送出：
 
    > 請依歐噴外掛的指引，幫我完成連線設定，建立 openfun-local，保留其他設定。Token 由我自己在畫面輸入。
 
-5. AI 設定完成後，進入「外掛程式」→「MCP」標籤頁，編輯 `openfun-local`。
-6. 在「環境變數」填入金鑰 `OPENFUN_API_TOKEN`，值貼上你的 Token。「環境變數透傳」留空，按「儲存」。
+   如果出現「在工作中繼續」，點擊後等待設定完成。
+5. 點左下角個人頭像 →「設定」→「外掛程式」→「MCP」標籤頁，點 `openfun-local` 旁的齒輪。
+6. 在「環境變數」新增金鑰 `OPENFUN_API_TOKEN`，值貼上 Token；「環境變數透傳」留空，按「儲存」。
 7. 開新對話，送出：「請檢查歐噴資料庫的設定是否正常」。
 
-Token 會存入 Codex 本機設定，未加密；請勿分享含有 Token 的設定檔或截圖。
+Token 存在本機設定，沒有加密；不要分享含 Token 的設定檔或截圖。
 
-若選擇在對話中設定 Token，請使用短效 Token；Token 會留在對話與工具呼叫紀錄中，重新啟動後需重貼。
-
-詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)。
+詳細說明：[Codex 安裝與使用](codex/README.md)。
 
 ## 桌面版完整匯出 Excel
 
