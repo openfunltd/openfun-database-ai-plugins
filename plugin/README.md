@@ -2,7 +2,15 @@
 
 `openfun-chat-plugin.zip` 是給 Claude 的**使用指引**：教它何時使用歐噴工具、先確認欄位再查詢、附上來源與說明限制，以及如何匯出 Excel。
 
-**真正負責連線查詢的是 `openfun-claude-extension.mcpb`。只裝 MCPB 就能查資料，這份 ZIP 是可選的補充指引，不能單獨查資料，也沒有 Token 設定欄位。**
+**實際查詢需要另外設定連線：網頁版使用遠端連接器，桌面版可安裝 `openfun-claude-extension.mcpb`。這份外掛不能單獨查資料，也沒有 Token 設定欄位。**
+
+## 從 GitHub 市集安裝（不用上傳檔案）
+
+1. 在 Claude 開啟 **Customize > Plugins > Add > Add marketplace**。
+2. 輸入 `https://github.com/openfunltd/openfun-database-ai-plugins.git`，按 **Sync**。
+3. 安裝並啟用「**歐噴資料庫聊天指引**」。
+
+網頁版接著依 [Claude 網頁版說明](https://github.com/openfunltd/openfun-database-ai-plugins/blob/main/docs/CLAUDE_WEB.md) 設定查詢連線。現有遠端入口需要在連接器的 Request headers 設定 Token；此欄位尚未對所有帳號開放。網頁遠端入口的工具較少，沒有桌面版的完整 Excel 批次匯出。桌面版依下方步驟設定。
 
 ## 如果你是在「技能（Skills）」上傳
 

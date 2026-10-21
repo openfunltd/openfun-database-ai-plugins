@@ -1,12 +1,12 @@
 # openfun-database-ai-plugins
 
-讓 **Claude Desktop** 和 **Codex** 都能查詢 [歐噴資料庫](https://data.openfun.tw)（台灣公共資料 API）。
+讓 **Claude Desktop、Claude 網頁版** 和 **Codex** 查詢 [歐噴資料庫](https://data.openfun.tw)（台灣公共資料 API）。網頁版需先確認帳號可設定連接器的 Token，見下方說明。
 裝好之後，直接在聊天中用中文問問題，例如：
 
 > 幫我查「開放文化基金會」出現在哪些資料集？
 > 臺北市資本額超過一億元的公司有幾家？列出前 10 家，附上資料來源。
 
-AI 會自動搜尋資料集、閱讀欄位說明、查詢資料或做統計，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改歐噴資料；要求 Excel 匯出時會寫入本機下載資料夾。
+AI 會搜尋資料集、閱讀欄位說明、查詢資料，並在回答中附上**資料集名稱、網址、授權與資料限制**。所有查詢功能都是**唯讀**，不會修改歐噴資料。桌面連線程式另有分組統計與完整 Excel 匯出，匯出檔案會寫入本機下載資料夾。
 
 兩個平台都能從桌面版畫面安裝。Codex 需要 Node.js 18 以上；Token 可直接在連線設定畫面輸入，也提供對話短效 Token 方式。
 
@@ -35,6 +35,15 @@ Claude 請下載上面的安裝檔，不要使用 GitHub 自動產生的「Sourc
 
 兩個平台都要到 <https://data.openfun.tw/user> 登入，建立**一般 API Token**（不是 Frontend Token）。
 Claude 安裝檔請從上方「[下載檔案](#下載檔案v010-測試版)」取得；Codex 請依下方市集步驟安裝。開發者也可依下方「原始碼與打包」自行產生。
+
+## Claude 網頁版：從市集安裝
+
+1. 開啟 **Customize > Plugins > Add > Add marketplace**。
+2. 輸入 `https://github.com/openfunltd/openfun-database-ai-plugins.git`，按 **Sync**，安裝「**歐噴資料庫聊天指引**」。
+3. 到 **Customize > Connectors** 新增自訂連接器，網址填 `https://data.openfun.tw/mcp`；若有 **Request headers**，在該設定填入 Token。詳細欄位見 [Claude 網頁版說明](docs/CLAUDE_WEB.md)。
+4. 在新聊天的 **「+」> Connectors** 啟用「歐噴資料庫」，問：「請檢查歐噴資料庫的設定是否正常」。
+
+**不用下載或上傳檔案。** 不過 Request headers 目前只向部分組織開放；沒有這個欄位的帳號，還需要歐噴網站提供 OAuth 登入才能安全完成查詢連線。網頁遠端入口目前支援搜尋、讀說明及記錄查詢，沒有桌面版的完整 Excel 批次匯出工具。
 
 ## Claude Desktop 安裝
 
@@ -94,7 +103,7 @@ Token 會存入 Codex 本機設定，未加密；請勿分享含有 Token 的設
 
 詳細步驟、Unix／Windows 指令及故障排除：[Codex plugin 說明](codex/README.md)。
 
-## 完整匯出 Excel
+## 桌面版完整匯出 Excel
 
 在對話中說：
 
